@@ -1,0 +1,19 @@
+# 로컬 노트 (옵시디언 볼트 연결, 커밋하지 않음)
+local-notes/
+
+# 개인용 몬스터 에셋 팩 — 공개 저장소에 올리지 않는다 (docs/DESIGN.md §14)
+PrivateAssets/*
+!PrivateAssets/.gitkeep
+!PrivateAssets/README.md
+
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
