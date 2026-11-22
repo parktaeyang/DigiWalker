@@ -1,0 +1,1036 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		185DDB2C30B322A500FF148A /* DigiWalker Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 185DDB2B30B322A500FF148A /* DigiWalker Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DA0000000000000000000A01 /* DigiWalkerCore in Frameworks */ = {isa = PBXBuildFile; productRef = DA0000000000000000000A03 /* DigiWalkerCore */; };
+		DA0000000000000000000B01 /* StarterPack in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B03 /* StarterPack */; };
+		DA0000000000000000000B02 /* PrivateAssets in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B04 /* PrivateAssets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		185DDB1630B322A500FF148A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 185DDB0030B322A400FF148A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 185DDB0730B322A400FF148A;
+			remoteInfo = DigiWalker;
+		};
+		185DDB2030B322A500FF148A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 185DDB0030B322A400FF148A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 185DDB0730B322A400FF148A;
+			remoteInfo = DigiWalker;
+		};
+		185DDB2D30B322A500FF148A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 185DDB0030B322A400FF148A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 185DDB2A30B322A500FF148A;
+			remoteInfo = "DigiWalker Watch App";
+		};
+		185DDB3B30B322A600FF148A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 185DDB0030B322A400FF148A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 185DDB2A30B322A500FF148A;
+			remoteInfo = "DigiWalker Watch App";
+		};
+		185DDB4530B322A600FF148A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 185DDB0030B322A400FF148A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 185DDB2A30B322A500FF148A;
+			remoteInfo = "DigiWalker Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		185DDB5130B322A600FF148A /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				185DDB2C30B322A500FF148A /* DigiWalker Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		185DDB0830B322A400FF148A /* DigiWalker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DigiWalker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		185DDB1530B322A500FF148A /* DigiWalkerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DigiWalkerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		185DDB1F30B322A500FF148A /* DigiWalkerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DigiWalkerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		185DDB2B30B322A500FF148A /* DigiWalker Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DigiWalker Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		185DDB3A30B322A600FF148A /* DigiWalker Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "DigiWalker Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		185DDB4430B322A600FF148A /* DigiWalker Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "DigiWalker Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DA0000000000000000000B03 /* StarterPack */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StarterPack; path = ../Assets/StarterPack; sourceTree = "<group>"; };
+		DA0000000000000000000B04 /* PrivateAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PrivateAssets; path = ../PrivateAssets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		185DDB0A30B322A400FF148A /* DigiWalker */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DigiWalker;
+			sourceTree = "<group>";
+		};
+		185DDB1830B322A500FF148A /* DigiWalkerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DigiWalkerTests;
+			sourceTree = "<group>";
+		};
+		185DDB2230B322A500FF148A /* DigiWalkerUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DigiWalkerUITests;
+			sourceTree = "<group>";
+		};
+		185DDB2F30B322A500FF148A /* DigiWalker Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DigiWalker Watch App";
+			sourceTree = "<group>";
+		};
+		185DDB3D30B322A600FF148A /* DigiWalker Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DigiWalker Watch AppTests";
+			sourceTree = "<group>";
+		};
+		185DDB4730B322A600FF148A /* DigiWalker Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DigiWalker Watch AppUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		185DDB0530B322A400FF148A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB1230B322A500FF148A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB1C30B322A500FF148A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB2830B322A500FF148A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA0000000000000000000A01 /* DigiWalkerCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB3730B322A600FF148A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB4130B322A600FF148A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		185DDAFF30B322A400FF148A = {
+			isa = PBXGroup;
+			children = (
+				185DDB0A30B322A400FF148A /* DigiWalker */,
+				185DDB1830B322A500FF148A /* DigiWalkerTests */,
+				185DDB2230B322A500FF148A /* DigiWalkerUITests */,
+				185DDB2F30B322A500FF148A /* DigiWalker Watch App */,
+				185DDB3D30B322A600FF148A /* DigiWalker Watch AppTests */,
+				185DDB4730B322A600FF148A /* DigiWalker Watch AppUITests */,
+				DA0000000000000000000B03 /* StarterPack */,
+				DA0000000000000000000B04 /* PrivateAssets */,
+				185DDB0930B322A400FF148A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		185DDB0930B322A400FF148A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				185DDB0830B322A400FF148A /* DigiWalker.app */,
+				185DDB1530B322A500FF148A /* DigiWalkerTests.xctest */,
+				185DDB1F30B322A500FF148A /* DigiWalkerUITests.xctest */,
+				185DDB2B30B322A500FF148A /* DigiWalker Watch App.app */,
+				185DDB3A30B322A600FF148A /* DigiWalker Watch AppTests.xctest */,
+				185DDB4430B322A600FF148A /* DigiWalker Watch AppUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		185DDB0730B322A400FF148A /* DigiWalker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 185DDB5230B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalker" */;
+			buildPhases = (
+				185DDB0430B322A400FF148A /* Sources */,
+				185DDB0530B322A400FF148A /* Frameworks */,
+				185DDB0630B322A400FF148A /* Resources */,
+				185DDB5130B322A600FF148A /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				185DDB2E30B322A500FF148A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				185DDB0A30B322A400FF148A /* DigiWalker */,
+			);
+			name = DigiWalker;
+			packageProductDependencies = (
+			);
+			productName = DigiWalker;
+			productReference = 185DDB0830B322A400FF148A /* DigiWalker.app */;
+			productType = "com.apple.product-type.application";
+		};
+		185DDB1430B322A500FF148A /* DigiWalkerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 185DDB5530B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalkerTests" */;
+			buildPhases = (
+				185DDB1130B322A500FF148A /* Sources */,
+				185DDB1230B322A500FF148A /* Frameworks */,
+				185DDB1330B322A500FF148A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				185DDB1730B322A500FF148A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				185DDB1830B322A500FF148A /* DigiWalkerTests */,
+			);
+			name = DigiWalkerTests;
+			packageProductDependencies = (
+			);
+			productName = DigiWalkerTests;
+			productReference = 185DDB1530B322A500FF148A /* DigiWalkerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		185DDB1E30B322A500FF148A /* DigiWalkerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 185DDB5830B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalkerUITests" */;
+			buildPhases = (
+				185DDB1B30B322A500FF148A /* Sources */,
+				185DDB1C30B322A500FF148A /* Frameworks */,
+				185DDB1D30B322A500FF148A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				185DDB2130B322A500FF148A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				185DDB2230B322A500FF148A /* DigiWalkerUITests */,
+			);
+			name = DigiWalkerUITests;
+			packageProductDependencies = (
+			);
+			productName = DigiWalkerUITests;
+			productReference = 185DDB1F30B322A500FF148A /* DigiWalkerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		185DDB2A30B322A500FF148A /* DigiWalker Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 185DDB4E30B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalker Watch App" */;
+			buildPhases = (
+				185DDB2730B322A500FF148A /* Sources */,
+				185DDB2830B322A500FF148A /* Frameworks */,
+				185DDB2930B322A500FF148A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				185DDB2F30B322A500FF148A /* DigiWalker Watch App */,
+			);
+			name = "DigiWalker Watch App";
+			packageProductDependencies = (
+				DA0000000000000000000A03 /* DigiWalkerCore */,
+			);
+			productName = "DigiWalker Watch App";
+			productReference = 185DDB2B30B322A500FF148A /* DigiWalker Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		185DDB3930B322A600FF148A /* DigiWalker Watch AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 185DDB5B30B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalker Watch AppTests" */;
+			buildPhases = (
+				185DDB3630B322A600FF148A /* Sources */,
+				185DDB3730B322A600FF148A /* Frameworks */,
+				185DDB3830B322A600FF148A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				185DDB3C30B322A600FF148A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				185DDB3D30B322A600FF148A /* DigiWalker Watch AppTests */,
+			);
+			name = "DigiWalker Watch AppTests";
+			packageProductDependencies = (
+			);
+			productName = "DigiWalker Watch AppTests";
+			productReference = 185DDB3A30B322A600FF148A /* DigiWalker Watch AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		185DDB4330B322A600FF148A /* DigiWalker Watch AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 185DDB5E30B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalker Watch AppUITests" */;
+			buildPhases = (
+				185DDB4030B322A600FF148A /* Sources */,
+				185DDB4130B322A600FF148A /* Frameworks */,
+				185DDB4230B322A600FF148A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				185DDB4630B322A600FF148A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				185DDB4730B322A600FF148A /* DigiWalker Watch AppUITests */,
+			);
+			name = "DigiWalker Watch AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "DigiWalker Watch AppUITests";
+			productReference = 185DDB4430B322A600FF148A /* DigiWalker Watch AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		185DDB0030B322A400FF148A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					185DDB0730B322A400FF148A = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					185DDB1430B322A500FF148A = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 185DDB0730B322A400FF148A;
+					};
+					185DDB1E30B322A500FF148A = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 185DDB0730B322A400FF148A;
+					};
+					185DDB2A30B322A500FF148A = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					185DDB3930B322A600FF148A = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 185DDB2A30B322A500FF148A;
+					};
+					185DDB4330B322A600FF148A = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 185DDB2A30B322A500FF148A;
+					};
+				};
+			};
+			buildConfigurationList = 185DDB0330B322A400FF148A /* Build configuration list for PBXProject "DigiWalker" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 185DDAFF30B322A400FF148A;
+			packageReferences = (
+				DA0000000000000000000A02 /* XCLocalSwiftPackageReference "../Packages/DigiWalkerCore" */,
+			);
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 185DDB0930B322A400FF148A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				185DDB0730B322A400FF148A /* DigiWalker */,
+				185DDB1430B322A500FF148A /* DigiWalkerTests */,
+				185DDB1E30B322A500FF148A /* DigiWalkerUITests */,
+				185DDB2A30B322A500FF148A /* DigiWalker Watch App */,
+				185DDB3930B322A600FF148A /* DigiWalker Watch AppTests */,
+				185DDB4330B322A600FF148A /* DigiWalker Watch AppUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		185DDB0630B322A400FF148A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB1330B322A500FF148A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB1D30B322A500FF148A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB2930B322A500FF148A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA0000000000000000000B01 /* StarterPack in Resources */,
+				DA0000000000000000000B02 /* PrivateAssets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB3830B322A600FF148A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB4230B322A600FF148A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		185DDB0430B322A400FF148A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB1130B322A500FF148A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB1B30B322A500FF148A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB2730B322A500FF148A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB3630B322A600FF148A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		185DDB4030B322A600FF148A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		185DDB1730B322A500FF148A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 185DDB0730B322A400FF148A /* DigiWalker */;
+			targetProxy = 185DDB1630B322A500FF148A /* PBXContainerItemProxy */;
+		};
+		185DDB2130B322A500FF148A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 185DDB0730B322A400FF148A /* DigiWalker */;
+			targetProxy = 185DDB2030B322A500FF148A /* PBXContainerItemProxy */;
+		};
+		185DDB2E30B322A500FF148A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 185DDB2A30B322A500FF148A /* DigiWalker Watch App */;
+			targetProxy = 185DDB2D30B322A500FF148A /* PBXContainerItemProxy */;
+		};
+		185DDB3C30B322A600FF148A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 185DDB2A30B322A500FF148A /* DigiWalker Watch App */;
+			targetProxy = 185DDB3B30B322A600FF148A /* PBXContainerItemProxy */;
+		};
+		185DDB4630B322A600FF148A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 185DDB2A30B322A500FF148A /* DigiWalker Watch App */;
+			targetProxy = 185DDB4530B322A600FF148A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		185DDB4C30B322A600FF148A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		185DDB4D30B322A600FF148A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		185DDB4F30B322A600FF148A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DigiWalker;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				CODE_SIGN_ENTITLEMENTS = "DigiWalker Watch App.entitlements";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "걸음 수를 읽어 파트너 몬스터의 경험치로 바꾸는 데 사용합니다.";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = ty.park.DigiWalker;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalker.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		185DDB5030B322A600FF148A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DigiWalker;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				CODE_SIGN_ENTITLEMENTS = "DigiWalker Watch App.entitlements";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "걸음 수를 읽어 파트너 몬스터의 경험치로 바꾸는 데 사용합니다.";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = ty.park.DigiWalker;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalker.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+		185DDB5330B322A600FF148A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DigiWalker;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		185DDB5430B322A600FF148A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DigiWalker;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		185DDB5630B322A600FF148A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalkerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DigiWalker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DigiWalker";
+			};
+			name = Debug;
+		};
+		185DDB5730B322A600FF148A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalkerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DigiWalker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DigiWalker";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		185DDB5930B322A600FF148A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalkerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = DigiWalker;
+			};
+			name = Debug;
+		};
+		185DDB5A30B322A600FF148A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalkerUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = DigiWalker;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		185DDB5C30B322A600FF148A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ty.park.DigiWalker-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DigiWalker Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DigiWalker Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		185DDB5D30B322A600FF148A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ty.park.DigiWalker-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DigiWalker Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DigiWalker Watch App";
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+		185DDB5F30B322A600FF148A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ty.park.DigiWalker-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "DigiWalker Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		185DDB6030B322A600FF148A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "ty.park.DigiWalker-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "DigiWalker Watch App";
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		185DDB0330B322A400FF148A /* Build configuration list for PBXProject "DigiWalker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				185DDB4C30B322A600FF148A /* Debug */,
+				185DDB4D30B322A600FF148A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		185DDB4E30B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalker Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				185DDB4F30B322A600FF148A /* Debug */,
+				185DDB5030B322A600FF148A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		185DDB5230B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				185DDB5330B322A600FF148A /* Debug */,
+				185DDB5430B322A600FF148A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		185DDB5530B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalkerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				185DDB5630B322A600FF148A /* Debug */,
+				185DDB5730B322A600FF148A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		185DDB5830B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalkerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				185DDB5930B322A600FF148A /* Debug */,
+				185DDB5A30B322A600FF148A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		185DDB5B30B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalker Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				185DDB5C30B322A600FF148A /* Debug */,
+				185DDB5D30B322A600FF148A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		185DDB5E30B322A600FF148A /* Build configuration list for PBXNativeTarget "DigiWalker Watch AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				185DDB5F30B322A600FF148A /* Debug */,
+				185DDB6030B322A600FF148A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		DA0000000000000000000A02 /* XCLocalSwiftPackageReference "../Packages/DigiWalkerCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/DigiWalkerCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DA0000000000000000000A03 /* DigiWalkerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DigiWalkerCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 185DDB0030B322A400FF148A /* Project object */;
+}

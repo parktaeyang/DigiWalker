@@ -1,0 +1,19 @@
+//
+//  DigiWalkerTests.swift
+//  DigiWalkerTests
+//
+//  Created by 박태양M1 on 11/22/26.
+//
+
+import Testing
+@testable import DigiWalker
+
+struct DigiWalkerTests {
+
+    @Test func example() async throws {
+        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+        // Swift Testing Documentation
+        // https://developer.apple.com/documentation/testing
+    }
+
+}
