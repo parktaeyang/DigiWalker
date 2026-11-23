@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct DigiWalkerApp: App {
+    @StateObject private var sync = PhoneSyncService()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(sync: sync)
         }
     }
 }

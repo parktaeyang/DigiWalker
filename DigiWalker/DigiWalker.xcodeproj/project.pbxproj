@@ -11,6 +11,7 @@
 		DA0000000000000000000A01 /* DigiWalkerCore in Frameworks */ = {isa = PBXBuildFile; productRef = DA0000000000000000000A03 /* DigiWalkerCore */; };
 		DA0000000000000000000B01 /* StarterPack in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B03 /* StarterPack */; };
 		DA0000000000000000000B02 /* PrivateAssets in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B04 /* PrivateAssets */; };
+		DA0000000000000000000C02 /* DigiWalkerCore in Frameworks */ = {isa = PBXBuildFile; productRef = DA0000000000000000000C03 /* DigiWalkerCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,6 +108,11 @@
 			path = "DigiWalker Watch AppUITests";
 			sourceTree = "<group>";
 		};
+		DA0000000000000000000C01 /* PartnerArt */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PartnerArt;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +120,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DA0000000000000000000C02 /* DigiWalkerCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -160,6 +167,7 @@
 			isa = PBXGroup;
 			children = (
 				185DDB0A30B322A400FF148A /* DigiWalker */,
+				DA0000000000000000000C01 /* PartnerArt */,
 				185DDB1830B322A500FF148A /* DigiWalkerTests */,
 				185DDB2230B322A500FF148A /* DigiWalkerUITests */,
 				185DDB2F30B322A500FF148A /* DigiWalker Watch App */,
@@ -203,9 +211,11 @@
 			);
 			fileSystemSynchronizedGroups = (
 				185DDB0A30B322A400FF148A /* DigiWalker */,
+				DA0000000000000000000C01 /* PartnerArt */,
 			);
 			name = DigiWalker;
 			packageProductDependencies = (
+				DA0000000000000000000C03 /* DigiWalkerCore */,
 			);
 			productName = DigiWalker;
 			productReference = 185DDB0830B322A400FF148A /* DigiWalker.app */;
@@ -271,6 +281,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				185DDB2F30B322A500FF148A /* DigiWalker Watch App */,
+				DA0000000000000000000C01 /* PartnerArt */,
 			);
 			name = "DigiWalker Watch App";
 			packageProductDependencies = (
@@ -368,10 +379,10 @@
 				Base,
 			);
 			mainGroup = 185DDAFF30B322A400FF148A;
+			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				DA0000000000000000000A02 /* XCLocalSwiftPackageReference "../Packages/DigiWalkerCore" */,
 			);
-			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 185DDB0930B322A400FF148A /* Products */;
 			projectDirPath = "";
@@ -629,15 +640,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "DigiWalker Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JPUL4486T6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = DigiWalker;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "걸음 수로 파트너 경험치를 계산하고 걷기·달리기 거리를 누적 기록합니다.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				CODE_SIGN_ENTITLEMENTS = "DigiWalker Watch App.entitlements";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "걸음 수를 읽어 파트너 몬스터의 경험치로 바꾸는 데 사용합니다.";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = ty.park.DigiWalker;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -664,15 +675,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "DigiWalker Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JPUL4486T6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = DigiWalker;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "걸음 수로 파트너 경험치를 계산하고 걷기·달리기 거리를 누적 기록합니다.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				CODE_SIGN_ENTITLEMENTS = "DigiWalker Watch App.entitlements";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "걸음 수를 읽어 파트너 몬스터의 경험치로 바꾸는 데 사용합니다.";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = ty.park.DigiWalker;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1027,6 +1038,10 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		DA0000000000000000000A03 /* DigiWalkerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DigiWalkerCore;
+		};
+		DA0000000000000000000C03 /* DigiWalkerCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DigiWalkerCore;
 		};

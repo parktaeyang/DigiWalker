@@ -23,14 +23,18 @@ final class DigiWalker_Watch_AppUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testPartnerAndHealthEntryPoint() throws {
         let app = XCUIApplication()
         app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        let connect = app.buttons["건강 데이터 연결"]
+        let refresh = app.buttons["활동량 갱신"]
+        XCTAssertTrue(connect.waitForExistence(timeout: 5) || refresh.exists)
+        XCTAssertTrue(app.staticTexts["partnerGrowth"].exists)
+        if connect.exists { connect.tap() } else { refresh.tap() }
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = "건강 데이터 연결 화면"
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     @MainActor

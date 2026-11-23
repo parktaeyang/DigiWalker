@@ -1,66 +1,80 @@
-import SwiftUI
 import DigiWalkerCore
+import SwiftUI
 
 struct WatchHomeView: View {
-    private let assets = MonsterAssets.shared
-
+    @ObservedObject var game: WatchGameStore
+    @State private var showsHatch = false
     #if DEBUG
-    @State private var debugOffset = 0
+    @State private var previewIndex = 0
     #endif
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
-        switch assets.result {
-        case .success(let loaded):
-            monsterView(loaded)
-        case .failure:
-            VStack(spacing: 6) {
-                Image(systemName: "questionmark.square.dashed").font(.largeTitle)
-                Text("몬스터 팩을 불러오지 못했어요")
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
+        ScrollView {
+            VStack(spacing: 5) {
+                if let state = game.state {
+                    portrait(state.monster)
+                    Text(state.monster.name).font(.headline)
+                    PartnerGrowthView(monster: state.monster)
+                    let currentDay = state.observedAt.map { state.calendar.isDateInToday($0) } == true
+                    Text("오늘 \((currentDay ? state.todaySteps : nil)?.formatted() ?? "—")걸음")
+                        .font(.caption)
+                }
+                Button(game.state?.enrolledAt == nil ? "건강 데이터 연결" : "활동량 갱신") {
+                    Task { await game.refresh(requestAccess: true) }
+                }
+                .disabled(game.busy)
+                if let message = game.message {
+                    Text(message).font(.footnote).foregroundStyle(.secondary)
+                }
             }
-            .padding()
+            .frame(maxWidth: .infinity)
+        }
+        .onChange(of: game.state?.monster.speciesId) { previous, current in
+            if previous == Monster.eggSpeciesId, let current, Hatchling(rawValue: current) != nil {
+                showsHatch = true
+            }
+        }
+        .alert("디지타마가 부화했어요!", isPresented: $showsHatch) {
+            Button("확인", role: .cancel) { }
+        } message: {
+            if let name = game.state?.monster.name { Text("새 파트너 · \(name)") }
+        }
+        .task(id: phase) {
+            if phase == .active { await game.refresh() }
         }
     }
 
     @ViewBuilder
-    private func monsterView(_ loaded: MonsterAssets.Loaded) -> some View {
-        let library = loaded.library
-        let starterIndex = library.species.firstIndex { $0.speciesId == library.starterSpeciesId } ?? 0
-        #if DEBUG
-        let species = library.species.isEmpty ? nil : library.species[(starterIndex + debugOffset) % library.species.count]
-        #else
-        let species = library.starter
-        #endif
-        if let species {
-            GeometryReader { proxy in
-                // 이름·단계 텍스트 공간을 남기고 들어가는 가장 큰 정수 배율 (최대 4)
-                let scale = integerPixelScale(
-                    spriteSize: species.size,
-                    availableWidth: proxy.size.width,
-                    availableHeight: proxy.size.height * 0.6
-                )
-                VStack(spacing: 4) {
-                    SpriteView(species: species, pixelSize: scale)
-                    Text(species.displayName).font(.headline)
-                    Text(species.stage).font(.caption2).foregroundStyle(.secondary)
-                    #if DEBUG
-                    Text("pack: \(loaded.source.rawValue)\(loaded.skipped.isEmpty ? "" : " (폴백)")")
-                        .font(.system(size: 10)).foregroundStyle(.secondary)
-                    #endif
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+    private func portrait(_ monster: Monster) -> some View {
+        if monster.isEgg || monster.hatchling != nil {
+            PartnerPortrait(speciesId: monster.speciesId, animated: true).frame(width: 64, height: 64)
+        } else if case .success(let assets) = MonsterAssets.shared.result,
+           let partner = assets.library.species(id: monster.speciesId) {
             #if DEBUG
+            let library = assets.library.species
+            let partnerIndex = library.firstIndex { $0.speciesId == partner.speciesId } ?? 0
+            let species = library[(partnerIndex + previewIndex) % library.count]
+            VStack(spacing: 2) {
+                sprite(species, source: assets.source)
+                if species.speciesId != partner.speciesId {
+                    Text("미리보기 · \(species.displayName)").font(.caption2)
+                }
+            }
             .contentShape(Rectangle())
-            .onTapGesture { debugOffset += 1 }
+            .onTapGesture { previewIndex = (previewIndex + 1) % library.count }
+            #else
+            sprite(partner, source: assets.source)
             #endif
-        } else {
-            Text("몬스터 팩을 불러오지 못했어요").font(.footnote).padding()
         }
     }
-}
 
-#Preview {
-    WatchHomeView()
+    @ViewBuilder
+    private func sprite(_ species: DecodedSpecies, source: MonsterAssets.Source) -> some View {
+        if source == .starterPack && species.speciesId == "starter_acorn" {
+            PartnerPortrait(speciesId: species.speciesId, animated: true).frame(width: 64, height: 64)
+        } else {
+            SpriteView(species: species, pixelSize: 2)
+        }
+    }
 }
