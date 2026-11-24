@@ -100,3 +100,11 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - 색 변환(비트 복제)이 DIM Modifier PNG 내보내기와 같은지, 카탈로그 `fingerprint` 재현(시도했으나 입력 방식을 알아내지 못함), 공유 종 두 카드(agu/gabu) 픽셀 동일 여부, Guilmon.bin 픽셀이 카탈로그 원본과 같은지.
 - 빈 `PrivateAssets/dim-bin/` 디렉터리는 사용자가 제거했다. 리뷰 반영 후 BIN 헤더 dimId 검증, 출력 경로 검증, 비정규 대상 거부, 코어 `cardId` 디코딩 검증을 추가했다(자세한 시험은 위 테스트 수 갱신 참고).
 
+
+## 실기기 설치·마이그레이션 확인 · 2026-11-25
+
+- 환경: iPhone 16 Pro Max(iOS 27.2.1)와 Apple Watch Ultra 2(watchOS 27.2.1), Xcode 27.2, 무료 Personal Team 서명. `xcodebuild clean` 후 Xcode MCP로 iPhone 스킴을 실기기에서 실행했고, 빌드된 앱에 포함된 워치 앱을 `devicectl`로 Ultra 2에 설치·실행했다. 설치본에 BIN은 없고 `PrivateAssets/dim` PNG 49개가 들어 있다.
+- 결과(사용자 사진으로 확인): 기존 디지타마 상태가 오류 없이 이전됐다. 워치와 iPhone 모두 디지타마 도트와 `부화 89 / 500걸음` 진행 막대를 표시했다. iPhone은 v2 스냅샷을 받아 `도감 · 1 / 50`을 표시했다(워치 앱 연결됨, 마지막 수신 2:23).
+- 수정: iPhone의 날짜를 기기 지역 설정과 관계없이 한국어 형식(예: 2026년 11월 25일, 2026. 11. 25. 오전 2:23)으로, 누적 거리를 1km 미만은 `66m`, 이상은 `1.23km` 형식으로 표시하도록 바꿨다.
+- 미검증: 실기기 부화·진화 alert, 유년기(32×24) DIM 도트 크기와 대기 애니메이션, iPhone 도감 화면 육안 확인, 날짜·거리 표시 수정분의 실기기 화면.
+- 참고: Xcode MCP의 실행 대상 이름 `박태양의 Apple Watch`는 "Apple"과 "Watch" 사이가 줄바꿈 없는 공백(U+00A0)이라 MCP로 전환하지 못했다. 워치 실행은 `devicectl`로 했다.
