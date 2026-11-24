@@ -61,8 +61,8 @@ import Testing
         }
     }
 
-    @Test func requiredStepsAreMultiplesOf500() {
-        #expect((0..<6).map(EvolutionCard.requiredSteps(stage:)) == [500, 1000, 1500, 2000, 2500, 3000])
+    @Test func requiredStepsAreMultiplesOf5000() {
+        #expect((0..<6).map(EvolutionCard.requiredSteps(stage:)) == [5_000, 10_000, 15_000, 20_000, 25_000, 30_000])
     }
 
     @Test func existingIdsAndPoyomonOutsideCards() throws {

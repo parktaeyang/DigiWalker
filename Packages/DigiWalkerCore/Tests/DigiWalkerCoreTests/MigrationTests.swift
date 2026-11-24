@@ -54,7 +54,7 @@ import Testing
         #expect(after.monster.stage == 1)
         #expect(after.monster.speciesId == "koromon")
         #expect(after.dex.map(\.speciesId) == ["digitama", "botamon", "koromon"])
-        #expect(after.dex.map(\.firstMetSteps) == [0, 500, 1000])
+        #expect(after.dex.map(\.firstMetSteps) == [0, 5_000, 10_000])
         #expect(after.monster.id == before.monster.id)
         #expect(after.monster.experience == before.monster.experience)
         #expect(after.monster.totalCreditedSteps == before.monster.totalCreditedSteps)
@@ -80,7 +80,7 @@ import Testing
             #expect(ids.count == 3)
             #expect(Array(ids.prefix(2)) == ["digitama", "poyomon"])
             #expect(ids[2] == after.monster.speciesId)
-            #expect(after.dex[1].firstMetSteps == 500)
+            #expect(after.dex[1].firstMetSteps == 5_000)
         }
         var cards = Set<String>()
         for seed in 0..<60 as Range<UInt64> {
@@ -90,11 +90,11 @@ import Testing
         #expect(cards == ["agu_ex", "gabu_ex", "guil_ex"])
     }
 
-    @Test func poyomonAt1600ReachesStageTwo() throws {
+    @Test func poyomonAt16000ReachesStageTwo() throws {
         let (_, after) = try migrate(LegacyFixtures.poyomon1600)
         #expect(after.monster.stage == 2)
         #expect(after.dex.count == 5) // digitama, poyomon, stage 0, 1, 2
-        #expect(after.dex.map(\.firstMetSteps) == [0, 500, 500, 1000, 1500])
+        #expect(after.dex.map(\.firstMetSteps) == [0, 5_000, 5_000, 10_000, 15_000])
     }
 
     @Test func unknownSpeciesIsLeftAlone() throws {
@@ -121,7 +121,7 @@ import Testing
         #expect(restored == after)
     }
 
-    @Test(arguments: [0, 499, 500, 850])
+    @Test(arguments: [0, 4_999, 5_000, 8_500])
     func legacyStarterChainsIntoCatalog(steps: Int) throws {
         var state = GameState(speciesId: "starter_acorn", name: "도토롱", now: LegacyFixtures.createdAt, timeZone: .gmt)
         state.enroll(at: LegacyFixtures.createdAt)
@@ -129,8 +129,8 @@ import Testing
         state.settle(day: LegacyFixtures.createdAt, steps: steps, distance: 100, using: &generator)
         state.migrateLegacyStarter(at: migratedAt, using: &generator)
         #expect(state.dex.first?.speciesId == "digitama")
-        #expect(state.monster.isEgg == (steps < 500))
-        if steps == 850 {
+        #expect(state.monster.isEgg == (steps < 5_000))
+        if steps == 8_500 {
             #expect(state.monster.stage == 0)
             #expect(state.dex.count == 2)
         }

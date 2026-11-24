@@ -17,7 +17,7 @@ public struct CardSlot: Equatable, Sendable {
 /// A DIM EX card used as a fixed evolution line. Stages 0...5 each list the species available at that stage.
 public struct EvolutionCard: Equatable, Sendable {
     public static let stageCount = 6
-    public static let stepsPerStage = 500
+    public static let stepsPerStage = 5_000
 
     public let id: String
     public let catalogCardId: String
@@ -26,7 +26,7 @@ public struct EvolutionCard: Equatable, Sendable {
     public let displayName: String
     public let stages: [[CardSlot]]
 
-    /// Credited steps needed to reach `stage` (stage 0 hatches at 500, stage 5 at 3000).
+    /// Credited steps needed to reach `stage` (stage 0 hatches at 5,000, stage 5 at 30,000).
     public static func requiredSteps(stage: Int) -> Int { stepsPerStage * (stage + 1) }
 
     public func stage(of speciesId: String) -> Int? {
