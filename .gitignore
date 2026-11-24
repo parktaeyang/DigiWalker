@@ -6,6 +6,9 @@ PrivateAssets/*
 !PrivateAssets/.gitkeep
 !PrivateAssets/README.md
 
+# 제3자 원본 자료(DIM 카드 이미지 등). 앱 번들에도 넣지 않는다
+PrivateSources/
+
 # macOS
 .DS_Store
 
