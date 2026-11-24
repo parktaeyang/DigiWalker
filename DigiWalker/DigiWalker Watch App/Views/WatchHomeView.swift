@@ -3,7 +3,8 @@ import SwiftUI
 
 struct WatchHomeView: View {
     @ObservedObject var game: WatchGameStore
-    @State private var showsHatch = false
+    private struct Event: Identifiable { let id = UUID(); let title: String; let message: String }
+    @State private var event: Event?
     #if DEBUG
     @State private var previewIndex = 0
     #endif
@@ -31,14 +32,20 @@ struct WatchHomeView: View {
             .frame(maxWidth: .infinity)
         }
         .onChange(of: game.state?.monster.speciesId) { previous, current in
-            if previous == Monster.eggSpeciesId, let current, Hatchling(rawValue: current) != nil {
-                showsHatch = true
+            // nil -> value is the initial load: no alert. A multi-stage jump arrives as one change (final species).
+            guard let previous, let current, previous != current else { return }
+            let name = game.state?.monster.name ?? current
+            if previous == Monster.eggSpeciesId {
+                event = Event(title: "디지타마가 부화했어요!", message: "새 모습 · \(name)")
+            } else {
+                let old = SpeciesCatalog.info(id: previous)?.name ?? previous
+                event = Event(title: "\(old)이(가) 진화했어요!", message: "새 모습 · \(name)")
             }
         }
-        .alert("디지타마가 부화했어요!", isPresented: $showsHatch) {
+        .alert(event?.title ?? "", isPresented: Binding(get: { event != nil }, set: { if !$0 { event = nil } })) {
             Button("확인", role: .cancel) { }
         } message: {
-            if let name = game.state?.monster.name { Text("새 파트너 · \(name)") }
+            Text(event?.message ?? "")
         }
         .task(id: phase) {
             if phase == .active { await game.refresh() }
@@ -47,8 +54,10 @@ struct WatchHomeView: View {
 
     @ViewBuilder
     private func portrait(_ monster: Monster) -> some View {
-        if monster.isEgg || monster.hatchling != nil {
-            PartnerPortrait(speciesId: monster.speciesId, animated: true).frame(width: 64, height: 64)
+        // starter_acorn still goes through MonsterAssets (private pack) first.
+        if monster.speciesId != "starter_acorn", DIMSpriteStore.shared.idleFrames(for: monster.speciesId) != nil
+            || PartnerPortrait.bundledSpeciesIds.contains(monster.speciesId) {
+            PartnerPortrait(speciesId: monster.speciesId, slot: 64, animated: true)
         } else if case .success(let assets) = MonsterAssets.shared.result,
            let partner = assets.library.species(id: monster.speciesId) {
             #if DEBUG
@@ -66,13 +75,15 @@ struct WatchHomeView: View {
             #else
             sprite(partner, source: assets.source)
             #endif
+        } else {
+            PartnerPortrait(speciesId: monster.speciesId, slot: 64, animated: true)
         }
     }
 
     @ViewBuilder
     private func sprite(_ species: DecodedSpecies, source: MonsterAssets.Source) -> some View {
         if source == .starterPack && species.speciesId == "starter_acorn" {
-            PartnerPortrait(speciesId: species.speciesId, animated: true).frame(width: 64, height: 64)
+            PartnerPortrait(speciesId: species.speciesId, slot: 64, animated: true)
         } else {
             SpriteView(species: species, pixelSize: 2)
         }

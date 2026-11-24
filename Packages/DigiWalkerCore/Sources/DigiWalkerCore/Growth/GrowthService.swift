@@ -8,6 +8,7 @@ public enum GrowthService {
     /// A single cutoff keeps every query in the same settlement, including a refresh across midnight.
     @MainActor
     public static func reconcile(_ saved: GameState, through now: Date,
+        random: (any RandomNumberGenerator)? = nil,
         read: (ActivityMetric, Date, Date) async throws -> Double?) async throws -> GameState {
         guard let enrolled = saved.enrolledAt, now >= enrolled else { return saved }
         let calendar = saved.calendar
@@ -16,6 +17,8 @@ public enum GrowthService {
         let previous = saved.lastStepDay.flatMap { calendar.date(byAdding: .day, value: -1, to: $0) }
         var day = max(firstDay, previous ?? firstDay)
         var candidate = saved
+        // `random` is copied here, so a seeded generator passed by the caller is not advanced.
+        var generator: any RandomNumberGenerator = random ?? SystemRandomNumberGenerator()
         var todayCount: Int?
         while day <= today {
             try Task.checkCancellation()
@@ -26,7 +29,7 @@ public enum GrowthService {
             let end = min(next, now)
             let steps = try await read(.steps, start, end).map(Int.init)
             let meters = try await read(.distanceMeters, start, end)
-            candidate.settle(day: day, steps: steps, distance: meters)
+            candidate.settle(day: day, steps: steps, distance: meters, at: now, using: &generator)
             if day == today {
                 if start == today {
                     todayCount = steps

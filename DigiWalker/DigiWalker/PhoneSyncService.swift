@@ -16,13 +16,20 @@ final class PhoneSyncService: NSObject, ObservableObject, WCSessionDelegate {
 
     override init() {
         super.init()
-        do { cache = try file.load() } catch { status = "저장된 워치 기록을 읽을 수 없어요." }
+        do { cache = Self.validated(try file.load()) } catch { status = "저장된 워치 기록을 읽을 수 없어요." }
         guard WCSession.isSupported() else {
             status = "이 기기에서는 워치 연결을 지원하지 않아요."
             return
         }
         WCSession.default.delegate = self
         WCSession.default.activate()
+    }
+
+    /// A restored cache is only used if it passes the same checks as a freshly received snapshot.
+    /// An invalid one is ignored (the file stays on disk) until the next valid snapshot replaces it.
+    static func validated(_ cache: PhoneCache?) -> PhoneCache? {
+        guard let cache, cache.snapshot.supersedes(nil) else { return nil }
+        return cache
     }
 
     private func updateStatus() {

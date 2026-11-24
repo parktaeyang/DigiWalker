@@ -18,7 +18,8 @@ import Testing
         #expect(state.monster.totalCreditedSteps == 499)
         let before = state.snapshot
         state.settle(day: tomorrow, steps: 1, distance: nil)
-        let baby = try #require(state.monster.hatchling)
+        let baby = try #require(state.monster.species)
+        #expect(state.monster.stage == 0)
         #expect(state.monster.name == baby.name)
         #expect(state.monster.totalCreditedSteps == 500)
         #expect(state.monster.id == eggID)
@@ -27,15 +28,26 @@ import Testing
         var restored = try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state))
         restored.settle(day: tomorrow, steps: 1, distance: nil)
         #expect(restored == state)
+        // Total is 499 + 2500 = 2999: stage 4, so digitama + stages 0...4 = 6 entries.
         restored.settle(day: tomorrow, steps: 2500, distance: nil)
-        #expect(restored.monster.hatchling == baby)
+        #expect(restored.monster.totalCreditedSteps == 2999)
+        #expect(restored.monster.stage == 4)
+        #expect(restored.monster.cardId == state.monster.cardId)
+        #expect(restored.dex.count == 6)
+        #expect(restored.dex.first?.speciesId == "digitama")
+        #expect(restored.dex.map(\.firstMetSteps) == [0, 500, 1000, 1500, 2000, 2500])
+        #expect(restored.dex.last?.speciesId == restored.monster.speciesId)
     }
 
     @Test func firstLargeReadingHatchesImmediately() throws {
         var state = GameState(now: start, timeZone: .gmt)
         state.enroll(at: start)
         state.settle(day: start, steps: 803, distance: nil)
-        #expect(state.monster.hatchling != nil)
+        #expect(state.monster.stage == 0) // 803 steps: stage 0 (500...999)
+        #expect(state.dex.count == 2)
+        #expect(state.dex.map(\.firstMetSteps) == [0, 500])
+        #expect(state.dex.first?.speciesId == "digitama")
+        #expect(state.dex.last?.speciesId == state.monster.speciesId)
         #expect(state.monster.totalCreditedSteps == 803)
         #expect(state.monster.experience == 80)
     }
@@ -52,7 +64,7 @@ import Testing
         #expect(state.ledgers == original.ledgers)
         #expect(state.snapshot.supersedes(original.snapshot))
         #expect(state.monster.isEgg == (steps < 500))
-        #expect((state.monster.hatchling != nil) == (steps >= 500))
+        #expect((state.monster.stage != nil) == (steps >= 500))
         let migrated = state
         state.migrateLegacyStarter()
         #expect(migrated == state)

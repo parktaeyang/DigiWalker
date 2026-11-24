@@ -11,13 +11,18 @@ struct ContentView: View {
                     let snapshot = cache.snapshot
                     Section {
                         VStack(spacing: 8) {
-                            if snapshot.monster.isEgg || snapshot.monster.hatchling != nil || snapshot.monster.speciesId == "starter_acorn" {
-                                PartnerPortrait(speciesId: snapshot.monster.speciesId).frame(width: 128, height: 128)
-                            }
+                            PartnerPortrait(speciesId: snapshot.monster.speciesId, slot: 128)
                             Text(snapshot.monster.name).font(.title.bold())
+                            if let card = snapshot.monster.cardId, let title = DexModel.cardTitles[card] {
+                                Text(title).font(.caption).foregroundStyle(.secondary)
+                            }
                             PartnerGrowthView(monster: snapshot.monster)
                         }
                         .frame(maxWidth: .infinity)
+                        let dex = DexModel(snapshot: snapshot)
+                        NavigationLink("도감 · \(dex.discoveredCount) / \(dex.totalCount)") {
+                            DexView(snapshot: snapshot)
+                        }
                     }
                     Section("워치 활동 기록") {
                         if let date = snapshot.observedAt {

@@ -11,6 +11,7 @@
 		DA0000000000000000000A01 /* DigiWalkerCore in Frameworks */ = {isa = PBXBuildFile; productRef = DA0000000000000000000A03 /* DigiWalkerCore */; };
 		DA0000000000000000000B01 /* StarterPack in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B03 /* StarterPack */; };
 		DA0000000000000000000B02 /* PrivateAssets in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B04 /* PrivateAssets */; };
+		DA0000000000000000000B05 /* PrivateAssets in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B04 /* PrivateAssets */; };
 		DA0000000000000000000C02 /* DigiWalkerCore in Frameworks */ = {isa = PBXBuildFile; productRef = DA0000000000000000000C03 /* DigiWalkerCore */; };
 /* End PBXBuildFile section */
 
@@ -403,6 +404,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DA0000000000000000000B05 /* PrivateAssets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

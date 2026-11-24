@@ -13,6 +13,7 @@ final class WatchGameStore: ObservableObject {
 
     func refresh(requestAccess: Bool = false) async {
         guard !busy else { return }
+        let loadingSaved = state == nil
         busy = true
         defer { busy = false }
         do {
@@ -20,6 +21,8 @@ final class WatchGameStore: ObservableObject {
                 if let saved = try file.load() {
                     var updated = saved
                     updated.migrateLegacyStarter()
+                    // Random evolution results only become real once commit() saves them.
+                    updated.migrateToEvolutionCatalog()
                     if updated == saved {
                         state = saved
                     } else {
@@ -46,7 +49,10 @@ final class WatchGameStore: ObservableObject {
             }
             message = candidate.todaySteps == nil ? "읽을 수 있는 오늘 걸음 기록이 없어요. 건강 권한을 확인해 주세요." : nil
         } catch {
-            message = error.localizedDescription
+            // A failed first load or migration save keeps the old file; the next refresh retries it.
+            message = loadingSaved && state == nil
+                ? "저장된 기록을 불러오거나 이전하지 못했어요. 앱을 다시 열면 다시 시도해요. (\(error.localizedDescription))"
+                : error.localizedDescription
         }
     }
 
