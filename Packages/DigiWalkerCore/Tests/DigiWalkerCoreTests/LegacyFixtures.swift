@@ -2,7 +2,7 @@ import Foundation
 @testable import DigiWalkerCore
 
 /// JSON produced by the code at commit 96819e2 (before cards and dex existed), via JSONEncoder with default strategies.
-/// Botamon/poyomon step and XP values were scaled ×10 when the stage threshold moved from 500 to 5,000 steps.
+/// Botamon/poyomon step and XP values were scaled ×10 when the evolution threshold moved from 500 to 5,000 steps (hatching stayed at 500).
 /// Each state was enrolled at createdAt (1_800_000_000), settled on day 1 and day 2 (10 steps), and observed.
 enum LegacyFixtures {
     static let createdAt = Date(timeIntervalSince1970: 1_800_000_000)
@@ -17,7 +17,7 @@ enum LegacyFixtures {
     /// Botamon, 12000 + 10 steps.
     static let botamon = #"{"createdAt":821692800,"enrolledAt":821692800,"lastStepDay":821750400,"ledgers":[821664000,{"creditedDistanceMeters":1234.5,"creditedSteps":12000,"creditedXP":1200},821750400,{"creditedDistanceMeters":0,"creditedSteps":10,"creditedXP":0}],"monster":{"distanceMeters":1234.5,"experience":1200,"id":"DEAFE761-E7A5-4F75-9EEF-06FB3A131F6B","name":"깜몬","speciesId":"botamon","totalCreditedSteps":12010},"observedAt":821779200,"revision":3,"timeZone":{"identifier":"GMT"},"todaySteps":10}"#
 
-    /// Punimon, 300 + 10 steps (below 5,000 only because the fixture was seeded directly).
+    /// Punimon, 300 + 10 steps (below 500 only because the fixture was seeded directly).
     static let punimon = #"{"createdAt":821692800,"enrolledAt":821692800,"lastStepDay":821750400,"ledgers":[821750400,{"creditedDistanceMeters":0,"creditedSteps":10,"creditedXP":0},821664000,{"creditedDistanceMeters":1234.5,"creditedSteps":300,"creditedXP":30}],"monster":{"distanceMeters":1234.5,"experience":30,"id":"59BC3CE7-4075-4D46-85F1-1A8E82259DD4","name":"푸니몬","speciesId":"punimon","totalCreditedSteps":310},"observedAt":821779200,"revision":3,"timeZone":{"identifier":"GMT"},"todaySteps":10}"#
 
     /// Poyomon, 8000 + 10 steps.

@@ -20,7 +20,7 @@ import Testing
     }
 
     @Test(arguments: [
-        (4_999, nil as Int?), (5_000, 0), (9_999, 0), (10_000, 1), (14_999, 1), (15_000, 2),
+        (499, nil as Int?), (500, 0), (9_999, 0), (10_000, 1), (14_999, 1), (15_000, 2),
         (19_999, 2), (20_000, 3), (24_999, 3), (25_000, 4), (29_999, 4), (30_000, 5), (100_000, 5),
     ])
     func stageFollowsCreditedSteps(steps: Int, expected: Int?) {
@@ -92,7 +92,7 @@ import Testing
         #expect(counting.draws == 7) // card + stage 0 + stages 1...5
         #expect(result.monster.stage == 5)
         #expect(result.dex.count == 7)
-        #expect(result.dex.map(\.firstMetSteps) == [0, 5_000, 10_000, 15_000, 20_000, 25_000, 30_000])
+        #expect(result.dex.map(\.firstMetSteps) == [0, 500, 10_000, 15_000, 20_000, 25_000, 30_000])
         #expect(Set(result.dex.dropFirst().map(\.firstMetAt)) == [at])
         #expect(result.dex.first?.firstMetAt == start)
         #expect(result.dex.first?.speciesId == "digitama")

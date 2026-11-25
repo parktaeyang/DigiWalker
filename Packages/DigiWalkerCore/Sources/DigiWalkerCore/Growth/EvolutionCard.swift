@@ -18,6 +18,8 @@ public struct CardSlot: Equatable, Sendable {
 public struct EvolutionCard: Equatable, Sendable {
     public static let stageCount = 6
     public static let stepsPerStage = 5_000
+    /// The egg hatches sooner than the later stages (user request, 2026-11-25).
+    public static let hatchSteps = 500
 
     public let id: String
     public let catalogCardId: String
@@ -26,8 +28,8 @@ public struct EvolutionCard: Equatable, Sendable {
     public let displayName: String
     public let stages: [[CardSlot]]
 
-    /// Credited steps needed to reach `stage` (stage 0 hatches at 5,000, stage 5 at 30,000).
-    public static func requiredSteps(stage: Int) -> Int { stepsPerStage * (stage + 1) }
+    /// Credited steps needed to reach `stage` (stage 0 hatches at 500, stage 1 at 10,000, stage 5 at 30,000).
+    public static func requiredSteps(stage: Int) -> Int { stage == 0 ? hatchSteps : stepsPerStage * (stage + 1) }
 
     public func stage(of speciesId: String) -> Int? {
         stages.firstIndex { $0.contains { $0.speciesId == speciesId } }
