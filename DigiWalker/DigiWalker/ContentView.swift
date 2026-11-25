@@ -11,7 +11,7 @@ struct ContentView: View {
                     let snapshot = cache.snapshot
                     Section {
                         VStack(spacing: 8) {
-                            PartnerPortrait(speciesId: snapshot.monster.speciesId, slot: 128)
+                            PartnerPortrait(speciesId: snapshot.monster.speciesId, slot: 128, animated: true)
                             Text(snapshot.monster.name).font(.title.bold())
                             if let card = snapshot.monster.cardId, let title = DexModel.cardTitles[card] {
                                 Text(title).font(.caption).foregroundStyle(.secondary)
