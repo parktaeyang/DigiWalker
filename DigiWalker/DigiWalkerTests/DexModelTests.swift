@@ -17,29 +17,85 @@ struct DexModelTests {
 
     private func rows(_ model: DexModel) -> [DexModel.Row] { model.sections.flatMap(\.rows) }
 
-    @Test func eggOnlyIsOneOfFifty() throws {
+    private var cardTitleList: [String] { SpeciesCatalog.cards.map { DexModel.cardTitles[$0.id] ?? "" } }
+
+    @Test func everyCardHasAKoreanTitle() {
+        for card in SpeciesCatalog.cards {
+            let title = DexModel.cardTitles[card.id]
+            #expect(title?.isEmpty == false, "missing title for \(card.id)")
+            #expect(title != card.displayName)
+        }
+        #expect(Set(cardTitleList).count == SpeciesCatalog.cards.count)
+    }
+
+    @Test func eggOnlyCountsUniqueSpeciesOnce() throws {
         let model = DexModel(snapshot: try snapshot(species: "digitama", name: "디지타마", card: nil, dex: ["digitama"]))
         #expect(model.synced)
         #expect(model.discoveredCount == 1)
-        #expect(model.totalCount == 50)
-        #expect(rows(model).count == 50)
-        #expect(model.sections.map(\.title) == ["공통", "아구몬 카드", "파피몬 카드", "길몬 카드"])
+        #expect(model.totalCount == 184)
+        #expect(model.totalCount == 1 + SpeciesCatalog.cardSpeciesIds.count)
+        // Rows are per card section, so shared species add rows but not to the species count.
+        let shown = rows(model).count
+        #expect(shown == 1 + SpeciesCatalog.cards.reduce(0) { $0 + $1.stages.reduce(0) { $0 + $1.count } })
+        #expect(shown == 1 + 11 * 17)
+        #expect(Set(rows(model).map(\.speciesId)).count == 184)
+        #expect(model.sections.map(\.title) == ["공통"] + cardTitleList)
     }
 
-    @Test func sharedSpeciesAppearOnce() throws {
+    @Test func sharedSpeciesAppearInEveryCardSection() throws {
         let model = DexModel(snapshot: try snapshot(species: "digitama", name: "디지타마", card: nil, dex: ["digitama"]))
-        let ids = rows(model).map(\.speciesId)
-        #expect(Set(ids).count == ids.count)
-        #expect(ids.filter { $0 == "algomon_adult" }.count == 1)
-        #expect(ids.filter { $0 == "omegamon" }.count == 1)
-        let agu = try #require(model.sections.first { $0.title == "아구몬 카드" })
-        #expect(agu.rows.contains { $0.speciesId == "omegamon" && $0.alsoIn != nil })
+        func section(_ card: String) throws -> DexModel.Section {
+            try #require(model.sections.first { $0.title == DexModel.cardTitles[card] })
+        }
+        for (species, cards) in [("botamon", ["agu_ex", "wolf_ex"]), ("susanoomon", ["agni_ex", "wolf_ex"]),
+                                 ("algomon_adult", ["agu_ex", "gabu_ex"]), ("omegamon", ["agu_ex", "gabu_ex"])] {
+            for card in SpeciesCatalog.cards.map(\.id) {
+                let count = try section(card).rows.filter { $0.speciesId == species }.count
+                #expect(count == (cards.contains(card) ? 1 : 0), "\(species) in \(card)")
+            }
+        }
+        // Rows inside one section never repeat a species.
+        for section in model.sections { #expect(Set(section.rows.map(\.speciesId)).count == section.rows.count) }
+    }
+
+    @Test func discoveringASharedSpeciesOpensBothSections() throws {
+        let model = DexModel(snapshot: try snapshot(species: "wanyamon", name: "와냐몬", card: "wolf_ex",
+                                                    dex: ["digitama", "botamon", "wanyamon"]))
+        #expect(model.discoveredCount == 3)
+        #expect(model.totalCount == 184)
+        for card in ["agu_ex", "wolf_ex"] {
+            let section = try #require(model.sections.first { $0.title == DexModel.cardTitles[card] })
+            let botamon = try #require(section.rows.first { $0.speciesId == "botamon" })
+            #expect(botamon.discovered)
+            #expect(botamon.stage == 0)
+        }
+        let wolf = try #require(model.sections.first { $0.title == "울프몬 카드" })
+        #expect(wolf.rows.first { $0.speciesId == "wanyamon" }?.discovered == true)
+        #expect(wolf.rows.count == 17)
+    }
+
+    @Test func jogressOnlySpeciesAreDerivedFromTheCards() {
+        #expect(DexModel.isJogressOnly("omegamon"))
+        #expect(DexModel.isJogressOnly("susanoomon"))
+        #expect(!DexModel.isJogressOnly("wargreymon"))
+        #expect(!DexModel.isJogressOnly("algomon_adult"))
+        #expect(!DexModel.isJogressOnly("digitama"))
+        let expected = Set(SpeciesCatalog.cardSpeciesIds.filter { id in
+            EvolutionCard.cards(containing: id).allSatisfy { $0.slot(of: id)?.randomEligible == false }
+        })
+        #expect(expected == ["omegamon", "susanoomon"])
+    }
+
+    @Test func undiscoveredJogressRowsAreFlagged() throws {
+        let model = DexModel(snapshot: try snapshot(species: "digitama", name: "디지타마", card: nil, dex: ["digitama"]))
+        let flagged = Set(rows(model).filter(\.jogressOnly).map(\.speciesId))
+        #expect(flagged == ["omegamon", "susanoomon"])
     }
 
     @Test func metPoyomonAddsLegacySectionAndRaisesTotal() throws {
         let model = DexModel(snapshot: try snapshot(species: "koromon", name: "코로몬", card: "agu_ex",
                                                     dex: ["digitama", "poyomon", "botamon", "koromon"]))
-        #expect(model.totalCount == 51)
+        #expect(model.totalCount == 185)
         #expect(model.discoveredCount == 4)
         #expect(model.sections.last?.title == "이전 파트너")
         #expect(model.sections.last?.rows.map(\.speciesId) == ["poyomon"])
@@ -65,7 +121,7 @@ struct DexModelTests {
         #expect(rows(outside).map(\.speciesId) == ["starter_acorn"])
         #expect(rows(outside).first?.displayName == "도토롱")
         #expect(outside.discoveredCount == 0)
-        #expect(outside.totalCount == 50)
+        #expect(outside.totalCount == 184)
     }
 
     @Test func unknownSpeciesInSyncedDexGoesToFormerPartners() throws {
@@ -74,7 +130,7 @@ struct DexModelTests {
         #expect(former.rows.map(\.speciesId) == ["mystery"])
         #expect(former.rows.first?.displayName == "???몬")
         #expect(model.discoveredCount == 1)
-        #expect(model.totalCount == 50)
+        #expect(model.totalCount == 184)
     }
 
     @Test func v1BabyKeepsTheBabyStage() throws {

@@ -68,7 +68,7 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - **스냅샷 v2:** `dex`와 `monster.cardId`를 포함한다. iPhone은 v1과 v2를 받고 v3 이상, dex 검증에 실패한 v2, dex가 붙은 v1은 거부한다. v1 캐시에서는 도감 대신 현재 파트너 한 줄과 동기화 안내를 표시한다.
 - **마이그레이션:** 워치 로드 경로에서 `migrateLegacyStarter()` 뒤에 `migrateToEvolutionCatalog()`를 호출하고 저장에 성공한 뒤에만 반영한다. 깜몬은 `agu_ex`, 푸니몬은 `gabu_ex`로 배정하고 누계에 맞게 진화한다. **포요몬은 새 알로 재배정**한다(카드를 무작위로 골라 stage 0부터 누계만큼 진화, 도감에는 디지타마·포요몬·새 종을 기록). 알 수 없는 종은 그대로 두고 도감에 현재 종만 넣는다.
 - **도트 표시:** `PrivateAssets/dim/<speciesId>.png`의 DIM 시트를 실행 중에 잘라(`SheetSlicing`) 대기 프레임을 정수 배율·최근접 보간으로 그린다. 없으면 저장소 PNG(디지타마·깜몬·푸니몬·포요몬), 그것도 없으면 `?` 플레이스홀더다. iPhone 타깃에도 PrivateAssets 폴더 참조를 추가했다.
-- **UI:** 워치는 부화·진화 알림과 "다음 진화까지 N걸음"·구간 진행바를 표시한다. iPhone은 `도감 · n / N`(기본 50, 포요몬을 만났으면 51) 화면을 제공하고 미발견 종은 `???`로 가린다.
+- **UI:** 워치는 부화·진화 알림과 "다음 진화까지 N걸음"·구간 진행바를 표시한다. iPhone은 `도감 · n / N`(2026-11-26부터 기본 184, 포요몬을 만났으면 185; 그 전에는 50/51) 화면을 제공하고 미발견 종은 `???`로 가린다.
 - **사용자 결정:** 한국어 표시명은 "우선 가안 그대로" 쓴다. 표(`SpeciesCatalog.swift`)에서 `nameVerified=false`인 항목은 미확인이며 이후 한 곳에서 고칠 수 있다. 도감 섹션 제목은 "아구몬 카드", "파피몬 카드", "길몬 카드"로 정했다. 출처와 이용 조건은 [에셋 기록](ASSET_SOURCES.md)에 있다.
 
 ### 검증한 환경
@@ -116,3 +116,13 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - 기존 저장 파일 영향: 저장 검증은 걸음 수와 단계를 대조하지 않는다. 이미 부화했거나 진화한 개체는 현재 종을 그대로 유지하고, 다음 진화는 새 기준을 따른다. 기존 도감 기록의 "N걸음에 부화/진화" 값은 기록 당시 값으로 남는다.
 - 테스트: 임계값 관련 테스트와 레거시 픽스처(깜몬·포요몬의 걸음·XP 값)를 10배로 조정했다. `swift test --package-path Packages/DigiWalkerCore` 98개 통과.
 - **부화만 500걸음으로 조정(사용자 결정, 같은 날):** 친구 요청으로 알 부화만 500걸음으로 되돌렸다(`EvolutionCard.hatchSteps`). 진화 기준은 그대로 10,000·15,000·20,000·25,000·30,000이다. 이미 부화한 개체에는 영향이 없다. `swift test --package-path Packages/DigiWalkerCore` 98개 통과.
+
+## EX 카드 8장 추가(총 11장) · 2026-11-26
+
+- **범위:** Terriermon·Renamon·Agnimon·Fairimon·Chackmon·Wolfmon·Blitzmon·Louwemon EX 카드를 코어 `SpeciesCatalog.cards`에 추가했다(기존 3장이 앞, `agu_ex`가 첫 카드). 디지타마는 500걸음에 11장 중 한 장을 균등하게 골라 그 카드의 유년기 I이 되고, 이후 같은 카드 안에서 기존 걸음 기준으로 무작위 진화한다. 스키마 v2는 그대로다. 걸음·XP·레벨 규칙은 바꾸지 않았다.
+- **종:** 고유 종 183(기존 49 + 134), 공유 종 4(깜몬·알고몬·오메가몬·스사노오몬). 스사노오몬은 오메가몬처럼 무작위 후보에서 제외한다(조그레스 전용, 미구현). 원작 잠금 해제(`unlockRequired`) 종 6종은 후보에 포함한다(사용자 결정). 한국어 표시명 134개와 카드 제목 8개는 모두 가안(`nameVerified = false`)이다.
+- **추출:** 8장 BIN은 `--allow-hash-mismatch`로 변환했다(해시는 모두 카탈로그와 다름, 헤더 dimId·스프라이트 233·슬롯 stage·프레임 규격 일치, 근거는 `docs/ASSET_SOURCES.md`). 결과 `PrivateAssets/dim` PNG 183개(2,176KB `du`, 합계 1,828,100바이트). 기존 49개 SHA-256은 변하지 않았고, 새 134개는 160×24 또는 768×56이며 `git status`에 BIN·PNG는 없다.
+- **앱:** 도감 분모 184(포요몬을 만났으면 185), 섹션은 공통 + 카드 11개(+ 이전 파트너). 공유 종은 해당 카드 섹션마다 한 행씩 표시하고(발견하면 양쪽이 함께 열림) 분모·발견 수는 종 기준 한 번만 센다. 조그레스 안내("특별한 조건이 필요해요")는 어느 카드에서도 무작위 후보가 아닌 종(오메가몬·스사노오몬)에 표시한다. 카드 제목 11개는 `DexModel.cardTitles`다. 이전의 "…카드에도 등장" 주석은 없앴다.
+- **테스트:** `swift test --package-path Packages/DigiWalkerCore` 108개 통과, `swift test --package-path Tools/dim-extract` 37개 통과. `DigiWalkerTests`(iPhone 17, iOS 27.2 시뮬레이터) 통과.
+- **빌드·번들(시뮬레이터):** iPhone 17(iOS 27.2) `DigiWalker` 스킴과 Apple Watch Series 12 (46mm)(watchOS 27.2) 워치 스킴 Debug 빌드 성공. iPhone 앱 번들(`Debug-iphonesimulator/DigiWalker.app`) 10,540KB, 그중 `PrivateAssets/dim` PNG 183개 2,176KB. 워치 앱 번들(독립 빌드) 5,776KB, `PrivateAssets/dim` PNG 183개 2,176KB(iPhone 앱에 포함된 워치 앱도 183개). 두 번들 모두 `.bin` 없음.
+- **미확인:** 가안 이름 134개, 새 BIN 8장 픽셀이 카탈로그 원본과 같은지, 새 카드의 대기 프레임(0·1번) 가정과 도트 육안 확인, 새 카드 개체의 시뮬레이터 화면 확인과 도감 스크롤 성능, 실기기 설치·동작(하지 않음). 동기화 때 잠금 해제 아이템을 지급하는 로직은 범위 밖이다.

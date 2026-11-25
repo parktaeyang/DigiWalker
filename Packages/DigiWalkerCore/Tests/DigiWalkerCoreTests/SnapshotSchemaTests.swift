@@ -77,14 +77,15 @@ import Testing
     @Test func fullDexSnapshotStaysSmall() throws {
         let state = hatched()
         let entries = (SpeciesCatalog.dexUniverse(includingLegacy: true)).map {
-            DexEntry(speciesId: $0, firstMetAt: start, firstMetSteps: 3000, cardId: "guil_ex")
+            DexEntry(speciesId: $0, firstMetAt: start, firstMetSteps: 3000,
+                     cardId: EvolutionCard.cards(containing: $0).map(\.id).max { $0.count < $1.count })
         }
-        #expect(entries.count == 51)
+        #expect(entries.count == 185)
         let big = MonsterSnapshot(schemaVersion: 2, revision: 1, createdAt: start,
                                   monster: state.monster, todaySteps: 1, observedAt: start, timeZone: .gmt,
                                   dex: entries)
         let size = try JSONEncoder().encode(big).count
-        #expect(size < 16 * 1024)
+        #expect(size < 32 * 1024, "size \(size)") // 185 entries: ~17 KB measured
     }
 
     /// Re-encodes a hatched state with the monster's card and species replaced.
@@ -122,6 +123,102 @@ import Testing
         // Stage 0 species and unknown species without a card keep decoding.
         _ = try JSONDecoder().decode(GameState.self, from: tampered(removeCard: true, speciesId: "botamon"))
         _ = try JSONDecoder().decode(GameState.self, from: tampered(removeCard: true, speciesId: "someday_mon"))
+    }
+
+    @Test func newCardStatesDecodeAndExistingGabumonStateIsUnchangedByMigration() throws {
+        for (card, species) in [("wolf_ex", "botamon"), ("louwe_ex", "lucemon_falldown"),
+                                ("gabu_ex", "punimon"), ("agni_ex", "susanoomon")] {
+            let state = try JSONDecoder().decode(GameState.self, from: tampered(cardId: card, speciesId: species))
+            #expect(state.monster.cardId == card)
+            #expect(state.monster.speciesId == species)
+        }
+        // A genuine gabu_ex/punimon state (as the existing owner's) round-trips and migration leaves it alone.
+        var before: GameState?
+        for seed in 0..<300 as Range<UInt64> {
+            var state = GameState(now: start, timeZone: .gmt)
+            state.enroll(at: start)
+            var generator = SeededGenerator(seed: seed)
+            state.settle(day: start, steps: 600, distance: 10, using: &generator)
+            if state.monster.cardId == "gabu_ex" { before = state; break }
+        }
+        let original = try #require(before)
+        #expect(original.monster.speciesId == "punimon")
+        let decoded = try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(original))
+        #expect(decoded == original)
+        var after = decoded
+        var generator = SeededGenerator(seed: 4)
+        after.migrateToEvolutionCatalog(at: start, using: &generator)
+        #expect(after == original)
+        #expect(after.revision == original.revision)
+    }
+
+    @Test func fixedPreExpansionGabumonFilesKeepEveryValue() throws {
+        let id = try #require(UUID(uuidString: "3F2A9C1E-5B7D-4E86-9A10-6C4D8E2F7B35"))
+        var state = try LegacyFixtures.gameState(LegacyFixtures.gabuPunimonState)
+        let before = state
+        var generator = SeededGenerator(seed: 4)
+        state.migrateToEvolutionCatalog(at: start, using: &generator)
+        #expect(state == before)
+        #expect(state.revision == 4)
+        #expect(state.monster.id == id)
+        #expect(state.monster.cardId == "gabu_ex")
+        #expect(state.monster.speciesId == "punimon")
+        #expect(state.monster.experience == 60)
+        #expect(state.monster.totalCreditedSteps == 600)
+        #expect(state.dex.map(\.speciesId) == ["digitama", "punimon"])
+        #expect(state.dex.map(\.cardId) == [nil, "gabu_ex"])
+        #expect(state.dex.map(\.firstMetSteps) == [0, 500])
+        #expect(state.ledgers.values.map(\.creditedSteps) == [600])
+        #expect(state.ledgers.values.map(\.creditedXP) == [60])
+
+        let snapshot = try JSONDecoder().decode(MonsterSnapshot.self, from: Data(LegacyFixtures.gabuPunimonSnapshotV2.utf8))
+        #expect(snapshot.supersedes(nil))
+        #expect(snapshot.schemaVersion == 2)
+        #expect(snapshot.revision == 4)
+        #expect(snapshot.monster == state.monster)
+        #expect(snapshot.dex == state.dex)
+        #expect(snapshot == state.snapshot)
+    }
+
+    @Test func speciesOfAnotherCardIsRejected() {
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(GameState.self, from: tampered(cardId: "wolf_ex", speciesId: "koromon"))
+        }
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(GameState.self, from: tampered(cardId: "louwe_ex", speciesId: "greymon"))
+        }
+        // Susanoomon sits on agni_ex and wolf_ex only.
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(GameState.self, from: tampered(cardId: "terrier_ex", speciesId: "susanoomon"))
+        }
+    }
+
+    @Test func legacyBotamonWithoutCardMigratesToAguEX() throws {
+        var state = try LegacyFixtures.gameState(LegacyFixtures.botamon)
+        var generator = SeededGenerator(seed: 12)
+        state.migrateToEvolutionCatalog(at: start, using: &generator)
+        #expect(state.monster.cardId == "agu_ex")
+        #expect(state.dex.allSatisfy { $0.cardId == nil || $0.cardId == "agu_ex" })
+    }
+
+    @Test func newCardMonsterSnapshotIsAcceptedAtSchemaV2() throws {
+        #expect(MonsterSnapshot.currentSchemaVersion == 2)
+        var found = false
+        for seed in 0..<200 as Range<UInt64> {
+            var state = GameState(now: start, timeZone: .gmt)
+            state.enroll(at: start)
+            var generator = SeededGenerator(seed: seed)
+            state.settle(day: start, steps: 12_000, distance: 10, using: &generator)
+            guard state.monster.cardId == "louwe_ex" || state.monster.cardId == "wolf_ex" else { continue }
+            let snapshot = state.snapshot
+            #expect(snapshot.schemaVersion == 2)
+            #expect(snapshot.supersedes(nil))
+            let decoded = try JSONDecoder().decode(MonsterSnapshot.self, from: JSONEncoder().encode(snapshot))
+            #expect(decoded == snapshot)
+            found = true
+            break
+        }
+        #expect(found)
     }
 
     private func tampered(removeCard: Bool, speciesId: String) throws -> Data {

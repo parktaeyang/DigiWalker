@@ -83,11 +83,11 @@ import Testing
             #expect(after.dex[1].firstMetSteps == 500)
         }
         var cards = Set<String>()
-        for seed in 0..<60 as Range<UInt64> {
+        for seed in 0..<300 as Range<UInt64> {
             let (_, after) = try migrate(LegacyFixtures.poyomon800, seed: seed)
             cards.insert(after.monster.cardId ?? "")
         }
-        #expect(cards == ["agu_ex", "gabu_ex", "guil_ex"])
+        #expect(cards == Set(SpeciesCatalog.cards.map(\.id)))
     }
 
     @Test func poyomonAt16000ReachesStageTwo() throws {

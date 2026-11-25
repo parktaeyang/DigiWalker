@@ -1,3 +1,4 @@
+import DigiWalkerCore
 import Foundation
 
 public enum CommandLineError: Error, Equatable, CustomStringConvertible {
@@ -18,7 +19,7 @@ public enum CommandLineError: Error, Equatable, CustomStringConvertible {
 
 public enum CommandLineOptions {
     public static let usage = """
-    usage: dim-extract --bin <file.bin> --card <agu_ex|gabu_ex|guil_ex|catalog id> --out <dir>
+    usage: dim-extract --bin <file.bin> --card <\(SpeciesCatalog.cards.map(\.id).joined(separator: "|"))|catalog id> --out <dir>
                        [--dry-run] [--force] [--allow-hash-mismatch] [--transparent-key 0x07E0] [--only <speciesId>]
                        [--repo-root <dir>] [--allow-outside-private-assets]
     """

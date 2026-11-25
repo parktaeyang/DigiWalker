@@ -31,4 +31,10 @@ enum LegacyFixtures {
 
     /// v1 snapshot of the botamon state.
     static let snapshotV1 = #"{"createdAt":821692800,"monster":{"distanceMeters":1234.5,"experience":120,"id":"7770E692-324B-4A27-90EA-437743B4195A","name":"깜몬","speciesId":"botamon","totalCreditedSteps":12010},"observedAt":821779200,"revision":3,"schemaVersion":1,"timeZone":{"identifier":"GMT"},"todaySteps":10}"#
+
+    /// Written by the code at commit 3756ec5 (three cards, before the card expansion): gabu_ex punimon with 600 credited steps.
+    static let gabuPunimonState = #"{"createdAt":821692800,"dex":[{"firstMetAt":821692800,"firstMetSteps":0,"speciesId":"digitama"},{"cardId":"gabu_ex","firstMetAt":821750400,"firstMetSteps":500,"speciesId":"punimon"}],"enrolledAt":821692800,"lastStepDay":821750400,"ledgers":[821750400,{"creditedDistanceMeters":321.5,"creditedSteps":600,"creditedXP":60}],"monster":{"cardId":"gabu_ex","distanceMeters":321.5,"experience":60,"id":"3F2A9C1E-5B7D-4E86-9A10-6C4D8E2F7B35","name":"푸니몬","speciesId":"punimon","totalCreditedSteps":600},"observedAt":821779200,"revision":4,"timeZone":{"identifier":"GMT"},"todaySteps":600}"#
+
+    /// Watch-to-phone v2 snapshot of the same state, as written by commit 3756ec5.
+    static let gabuPunimonSnapshotV2 = #"{"createdAt":821692800,"dex":[{"firstMetAt":821692800,"firstMetSteps":0,"speciesId":"digitama"},{"cardId":"gabu_ex","firstMetAt":821750400,"firstMetSteps":500,"speciesId":"punimon"}],"monster":{"cardId":"gabu_ex","distanceMeters":321.5,"experience":60,"id":"3F2A9C1E-5B7D-4E86-9A10-6C4D8E2F7B35","name":"푸니몬","speciesId":"punimon","totalCreditedSteps":600},"observedAt":821779200,"revision":4,"schemaVersion":2,"timeZone":{"identifier":"GMT"},"todaySteps":600}"#
 }

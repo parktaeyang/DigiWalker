@@ -90,4 +90,115 @@ extension EvolutionCard {
             [slot("dukemon", 13), slot("dukemon_x", 14), slot("megidramon", 15),
              slot("dukemon_crimson", 16)],
         ])
+
+    // Cards 4-11 below were added on 2026-11-26 from the same catalog. Frontier cards have two stage-2 species.
+    // Susanoomon is shared by Agnimon and Wolfmon and is Jogress-only, so random evolution skips it.
+    public static let terriermonEX = EvolutionCard(
+        id: "terrier_ex", catalogCardId: "b8a262b73a584fa2", dimId: 18, displayName: "Terriermon EX",
+        stages: [
+            [slot("zerimon", 0)],
+            [slot("gummymon", 1)],
+            [slot("terriermon", 2)],
+            [slot("galgomon", 3), slot("turuiemon", 4), slot("harpymon", 5), slot("wendimon", 6)],
+            [slot("rapidmon", 7), slot("sinduramon", 8), slot("makuramon", 9),
+             slot("andiramon_deva", 10), slot("pajiramon", 11), slot("andiramon", 12)],
+            [slot("saintgalgomon", 13), slot("cherubimon_virtue", 14), slot("cherubimon_vice", 15),
+             slot("rapidmon_armor", 16)],
+        ])
+
+    public static let renamonEX = EvolutionCard(
+        id: "rena_ex", catalogCardId: "ebec1fb5584f9ccc", dimId: 32, displayName: "Renamon EX",
+        stages: [
+            [slot("relemon", 0)],
+            [slot("pokomon", 1)],
+            [slot("renamon", 2)],
+            [slot("kyubimon", 3), slot("youkomon", 4), slot("icedevimon", 5), slot("lynxmon", 6)],
+            [slot("kumbhiramon", 7), slot("vikaralamon", 8), slot("taomon", 9),
+             slot("doumon", 10), slot("caturamon", 11), slot("indaramon", 12)],
+            [slot("sakuyamon", 13), slot("parasimon", 14), slot("kuzuhamon_miko", 15),
+             slot("sakuyamon_x", 16)],
+        ])
+
+    public static let agnimonEX = EvolutionCard(
+        id: "agni_ex", catalogCardId: "ffffde3475e68d8e", dimId: 6, displayName: "Agnimon EX",
+        stages: [
+            [slot("mokumon", 0)],
+            [slot("petimeramon", 1)],
+            [slot("flamon", 2), slot("gottsumon", 3)],
+            [slot("agnimon", 4), slot("meramon", 5), slot("starmon", 6), slot("grottemon", 7)],
+            [slot("aldamon", 8), slot("vritramon", 9), slot("superstarmon", 10),
+             slot("gigasmon", 11), slot("darksuperstarmon", 12)],
+            [slot("kaisergreymon", 13), slot("ancientgreymon", 14), slot("ancientvolcamon", 15),
+             slot("susanoomon", 16, eligible: false)],
+        ])
+
+    public static let fairimonEX = EvolutionCard(
+        id: "fairi_ex", catalogCardId: "ad95fda80f528ee8", dimId: 10, displayName: "Fairimon EX",
+        stages: [
+            [slot("yuramon", 0)],
+            [slot("tanemon", 1)],
+            [slot("tinkermon", 2), slot("pomumon", 3)],
+            [slot("fairimon", 4), slot("cockatrimon", 5), slot("arbormon", 6), slot("zassoumon", 7)],
+            [slot("jetsilphymon", 8), slot("shutumon", 9), slot("petaldramon", 10),
+             slot("peacockmon", 11), slot("zamielmon", 12)],
+            [slot("ancientirismon", 13), slot("lotusmon", 14), slot("ancienttroiamon", 15),
+             slot("lordknightmon", 16)],
+        ])
+
+    public static let chackmonEX = EvolutionCard(
+        id: "chack_ex", catalogCardId: "8160a04f17b7e759", dimId: 16, displayName: "Chackmon EX",
+        stages: [
+            [slot("yukimibotamon", 0)],
+            [slot("hiyarimon", 1)],
+            [slot("bearmon", 2), slot("snowgoblimon", 3)],
+            [slot("chackmon", 4), slot("gryzmon", 5), slot("icemon", 6), slot("mojyamon", 7)],
+            [slot("daipenmon", 8), slot("blizzarmon", 9), slot("panjyamon_x", 10),
+             slot("nanomon", 11), slot("astamon", 12)],
+            [slot("olegmon", 13), slot("frosvelgrmon", 14), slot("ancientmegatheriumon", 15),
+             slot("dynasmon", 16)],
+        ])
+
+    public static let wolfmonEX = EvolutionCard(
+        id: "wolf_ex", catalogCardId: "2661974b34f571f5", dimId: 36, displayName: "Wolfmon EX",
+        stages: [
+            [slot("botamon", 0)],
+            [slot("wanyamon", 1)],
+            [slot("strabimon", 2), slot("gizamon", 3)],
+            [slot("wolfmon", 4), slot("dobermon", 5), slot("ranamon", 6), slot("ebidramon", 7)],
+            [slot("beowolfmon", 8), slot("garummon", 9), slot("calamaramon", 10),
+             slot("sirenmon", 11), slot("splashmon", 12)],
+            [slot("magnagarurumon", 13), slot("ancientgarurumon", 14), slot("ancientmermaimon", 15),
+             slot("susanoomon", 16, eligible: false)],
+        ])
+
+    public static let blitzmonEX = EvolutionCard(
+        id: "blitz_ex", catalogCardId: "a5735c0f13f86ae3", dimId: 37, displayName: "Blitzmon EX",
+        stages: [
+            [slot("choromon", 0)],
+            [slot("caprimon", 1)],
+            [slot("kokabuterimon", 2), slot("kokuwamon", 3)],
+            [slot("blitzmon", 4), slot("thunderballmon", 5), slot("mercuremon", 6),
+             slot("bladekuwagamon", 7)],
+            [slot("rhinokabuterimon", 8), slot("bolgmon", 9), slot("sephirothmon", 10),
+             slot("metallifekuwagamon", 11), slot("wisemon", 12)],
+            [slot("ancientbeatmon", 13), slot("grandiskuwagamon", 14), slot("ancientwisemon", 15),
+             slot("murmukusmon", 16)],
+        ])
+
+    public static let louwemonEX = EvolutionCard(
+        id: "louwe_ex", catalogCardId: "10ab04bac23563d0", dimId: 33, displayName: "Louwemon EX",
+        stages: [
+            [slot("popomon", 0)],
+            [slot("frimon", 1)],
+            [slot("liollmon", 2), slot("gazimon", 3)],
+            [slot("louwemon", 4), slot("liamon", 5), slot("duskmon", 6), slot("madleomon", 7)],
+            [slot("raihimon", 8), slot("kaiserleomon", 9), slot("loaderleomon", 10),
+             slot("velgrmon", 11), slot("skullsatamon", 12), slot("lucemon_falldown", 13)],
+            [slot("deathmon", 14), slot("dinotigermon", 15), slot("ancientsphinxmon", 16)],
+        ])
+
+    /// Every card that lists `speciesId` (shared species appear in more than one card), in card order.
+    public static func cards(containing speciesId: String) -> [EvolutionCard] {
+        SpeciesCatalog.cards.filter { $0.stage(of: speciesId) != nil }
+    }
 }

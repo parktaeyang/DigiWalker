@@ -8,7 +8,8 @@ struct DexModel {
         let stage: Int?
         let entry: DexEntry?
         let discovered: Bool
-        let alsoIn: String?
+        /// True when no card lets random evolution pick this species (Jogress-only: Omegamon, Susanoomon).
+        var jogressOnly: Bool = false
         /// Used when the species is not in the catalog (e.g. the old starter in a v1 cache).
         var fallbackName: String? = nil
         var id: String { speciesId }
@@ -24,7 +25,17 @@ struct DexModel {
         var id: String { title }
     }
 
-    static let cardTitles = ["agu_ex": "아구몬 카드", "gabu_ex": "파피몬 카드", "guil_ex": "길몬 카드"]
+    static let cardTitles = [
+        "agu_ex": "아구몬 카드", "gabu_ex": "파피몬 카드", "guil_ex": "길몬 카드",
+        "terrier_ex": "테리어몬 카드", "rena_ex": "레나몬 카드", "agni_ex": "아그니몬 카드",
+        "fairi_ex": "페어리몬 카드", "chack_ex": "차크몬 카드", "wolf_ex": "울프몬 카드",
+        "blitz_ex": "블리츠몬 카드", "louwe_ex": "로에몬 카드",
+    ]
+
+    /// Species that no card lists as a random evolution candidate (needs a special condition to appear).
+    static func isJogressOnly(_ speciesId: String) -> Bool {
+        SpeciesCatalog.jogressOnlySpeciesIds.contains(speciesId)
+    }
 
     let synced: Bool
     let discoveredCount: Int
@@ -44,26 +55,19 @@ struct DexModel {
             let monster = snapshot.monster
             let baby = ["botamon", "punimon", "poyomon"].contains(monster.speciesId)
             let current = Row(speciesId: monster.speciesId, stage: monster.stage ?? (baby ? 0 : nil), entry: nil, discovered: true,
-                              alsoIn: nil, fallbackName: monster.name)
+                              fallbackName: monster.name)
             sections = [Section(title: "현재 파트너", rows: [current])]
             return
         }
 
-        func row(_ id: String, stage: Int?, alsoIn: String? = nil) -> Row {
-            Row(speciesId: id, stage: stage, entry: entries[id], discovered: known.contains(id), alsoIn: alsoIn)
+        func row(_ id: String, stage: Int?) -> Row {
+            Row(speciesId: id, stage: stage, entry: entries[id], discovered: known.contains(id),
+                jogressOnly: Self.isJogressOnly(id))
         }
         var sections = [Section(title: "공통", rows: [row(SpeciesCatalog.eggId, stage: nil)])]
-        var placed = Set<String>()
+        // Shared species are listed in every card that has them; counts above are per species, so they count once.
         for card in SpeciesCatalog.cards {
-            var rows: [Row] = []
-            for (stage, slots) in card.stages.enumerated() {
-                for slot in slots where placed.insert(slot.speciesId).inserted {
-                    // Shared species get one row, in the first card (the sprite reference card).
-                    let others = SpeciesCatalog.cards.filter { $0.id != card.id && $0.stage(of: slot.speciesId) != nil }
-                    let note = others.isEmpty ? nil : others.compactMap { Self.cardTitles[$0.id] }.joined(separator: ", ") + "에도 등장"
-                    rows.append(row(slot.speciesId, stage: stage, alsoIn: note))
-                }
-            }
+            let rows = card.stages.enumerated().flatMap { stage, slots in slots.map { row($0.speciesId, stage: stage) } }
             sections.append(Section(title: Self.cardTitles[card.id] ?? card.displayName, rows: rows))
         }
         // Poyomon and any species outside the catalog (unknown legacy species) go under "이전 파트너".
@@ -72,7 +76,7 @@ struct DexModel {
         for entry in snapshot.dex ?? [] where !catalogIds.contains(entry.speciesId) {
             let name = entry.speciesId == snapshot.monster.speciesId ? snapshot.monster.name : entry.speciesId
             former.append(Row(speciesId: entry.speciesId, stage: nil, entry: entry, discovered: true,
-                              alsoIn: nil, fallbackName: name))
+                              fallbackName: name))
         }
         if !former.isEmpty { sections.append(Section(title: "이전 파트너", rows: former)) }
         self.sections = sections
@@ -133,10 +137,9 @@ private struct DexRowView: View {
                 if row.discovered, let entry = row.entry {
                     Text(metText(entry)).font(.caption2).foregroundStyle(.secondary)
                 }
-                if row.speciesId == "omegamon", !row.discovered {
+                if row.jogressOnly, !row.discovered {
                     Text("특별한 조건이 필요해요").font(.caption2).foregroundStyle(.secondary)
                 }
-                if let note = row.alsoIn { Text(note).font(.caption2).foregroundStyle(.secondary) }
             }
         }
         .accessibilityElement(children: .combine)

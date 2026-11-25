@@ -18,6 +18,48 @@ struct PlannerTests {
         #expect(agu.first { $0.speciesId == "omegamon" }?.action == .write)
     }
 
+    @Test func allElevenCardsPlanAgainstSyntheticBins() throws {
+        for card in SpeciesCatalog.cards {
+            let image = try DIMCardImage(raw: SyntheticCard().build(card: card))
+            let sheets = try SheetPlanner.plan(card: card, image: image)
+            #expect(sheets.count == 17, "\(card.id)")
+            for sheet in sheets where sheet.action == .write {
+                #expect(sheet.frames.count == sheet.spec.frameCount)
+                #expect(sheet.sheetWidth == sheet.spec.frameWidth * sheet.spec.frameCount)
+            }
+        }
+    }
+
+    @Test func wolfmonSkipsSharedBotamonAndSusanoomon() throws {
+        let sheets = try SheetPlanner.plan(card: .wolfmonEX, image: DIMCardImage(raw: SyntheticCard().build(card: .wolfmonEX)))
+        #expect(sheets.filter { $0.action == .write }.count == 15)
+        #expect(sheets.first { $0.speciesId == "botamon" }?.action == .skipShared(baseCard: "agu_ex"))
+        #expect(sheets.first { $0.speciesId == "susanoomon" }?.action == .skipShared(baseCard: "agni_ex"))
+        #expect(sheets.filter { $0.action != .write }.count == 2)
+    }
+
+    @Test func agnimonWritesSusanoomonAsBaseCard() throws {
+        let sheets = try SheetPlanner.plan(card: .agnimonEX, image: DIMCardImage(raw: SyntheticCard().build(card: .agnimonEX)))
+        #expect(sheets.filter { $0.action == .write }.count == 17)
+        #expect(sheets.first { $0.speciesId == "susanoomon" }?.action == .write)
+    }
+
+    @Test func frontierLayoutHasTwoStageTwoSlotsAnd233Sprites() throws {
+        let card = EvolutionCard.agnimonEX
+        #expect(card.stages[2].count == 2)
+        let image = try DIMCardImage(raw: SyntheticCard().build(card: card))
+        #expect(image.spriteCount == 233)
+        let sheets = try SheetPlanner.plan(card: card, image: image)
+        for slot in card.stages[2] {
+            let sheet = try #require(sheets.first { $0.speciesId == slot.speciesId })
+            #expect(sheet.sheetWidth == 768 && sheet.sheetHeight == 56)
+        }
+        // Louwemon: stage 4 has six species and stage 5 three.
+        #expect(EvolutionCard.louwemonEX.stages.map(\.count) == [1, 1, 2, 4, 6, 3])
+        let louwe = try DIMCardImage(raw: SyntheticCard().build(card: .louwemonEX))
+        #expect(louwe.spriteCount == 233)
+    }
+
     @Test func sheetsFollowCoreSpec() throws {
         let sheets = try SheetPlanner.plan(card: .agumonEX, image: DIMCardImage(raw: SyntheticCard().build(card: .agumonEX)))
         let botamon = try #require(sheets.first { $0.speciesId == "botamon" })
@@ -58,6 +100,12 @@ struct PlannerTests {
     @Test func resolvesCardsByChartOrCatalogId() throws {
         #expect(try SheetPlanner.resolveCard("agu_ex").id == "agu_ex")
         #expect(try SheetPlanner.resolveCard("5e133fc75fc90377").id == "gabu_ex")
+        for card in SpeciesCatalog.cards {
+            #expect(try SheetPlanner.resolveCard(card.id).id == card.id)
+            #expect(try SheetPlanner.resolveCard(card.catalogCardId).id == card.id)
+        }
+        #expect(try SheetPlanner.resolveCard("wolf_ex").catalogCardId == "2661974b34f571f5")
+        #expect(try SheetPlanner.resolveCard("b8a262b73a584fa2").id == "terrier_ex")
         #expect(throws: PlanError.unknownCard("zzz")) { try SheetPlanner.resolveCard("zzz") }
     }
 }
@@ -138,6 +186,25 @@ struct ExtractorTests {
         let png = try Data(contentsOf: env.out.appendingPathComponent("gabumon.png"))
         let decoded = try PNGWriterTests.decode(png)
         #expect(decoded.w == 768 && decoded.h == 56)
+    }
+
+    @Test func wolfmonRunKeepsExistingFilesAndAddsOnlyNewOnes() throws {
+        let env = try makeEnv(card: .wolfmonEX)
+        defer { try? FileManager.default.removeItem(at: env.dir) }
+        try FileManager.default.createDirectory(at: env.out, withIntermediateDirectories: true)
+        let existing = ["botamon.png", "susanoomon.png", "agumon.png"]
+        for name in existing { try Data("keep-\(name)".utf8).write(to: env.out.appendingPathComponent(name)) }
+        var opts = ExtractOptions(binURL: env.bin, card: "wolf_ex", outDirectory: env.out)
+        opts.repoRoot = env.dir
+        opts.allowHashMismatch = true
+        let report = try Extractor.run(opts)
+        #expect(report.results.filter { $0.outcome == .skippedExisting }.isEmpty)
+        #expect(report.results.first { $0.speciesId == "botamon" }?.outcome == .skippedShared(baseCard: "agu_ex"))
+        #expect(report.results.first { $0.speciesId == "susanoomon" }?.outcome == .skippedShared(baseCard: "agni_ex"))
+        #expect(report.results.filter { if case .skippedShared = $0.outcome { true } else { false } }.count == 2)
+        for name in existing { #expect(try Data(contentsOf: env.out.appendingPathComponent(name)) == Data("keep-\(name)".utf8)) }
+        #expect(files(env.out).count == 15 + existing.count)
+        #expect(try Data(contentsOf: env.out.appendingPathComponent("wolfmon.png")).starts(with: [0x89, 0x50, 0x4E, 0x47]))
     }
 
     @Test func invalidSpecLeavesNoPartialOutput() throws {

@@ -32,8 +32,8 @@ import Testing
         }
     }
 
-    @Test func pathStaysInsideChosenCardAndNeverPicksOmegamon() throws {
-        for seed in 0..<300 as Range<UInt64> {
+    @Test func pathStaysInsideChosenCardAndNeverPicksJogressOnlySpecies() throws {
+        for seed in 0..<1000 as Range<UInt64> {
             var state = enrolled()
             var generator = SeededGenerator(seed: seed)
             var visited: [String] = []
@@ -45,7 +45,7 @@ import Testing
             #expect(visited.count == 6)
             for (stage, speciesId) in visited.enumerated() {
                 #expect(card.eligible(stage: stage).map(\.speciesId).contains(speciesId))
-                #expect(speciesId != "omegamon")
+                #expect(card.slot(of: speciesId)?.randomEligible == true)
             }
             #expect(state.dex.map(\.speciesId) == [SpeciesCatalog.eggId] + visited)
         }
@@ -54,15 +54,16 @@ import Testing
     @Test func everyCardAndEligibleSpeciesIsReachable() {
         var cards = Set<String>()
         var reached = Set<String>()
-        for seed in 0..<600 as Range<UInt64> {
+        for seed in 0..<3000 as Range<UInt64> {
             let state = settled(steps: 30_000, seed: seed)
             cards.insert(state.monster.cardId ?? "")
             reached.formUnion(state.dex.map(\.speciesId))
         }
-        #expect(cards == ["agu_ex", "gabu_ex", "guil_ex"])
+        #expect(cards == Set(SpeciesCatalog.cards.map(\.id)))
         let eligible = SpeciesCatalog.cards.flatMap { $0.stages.flatMap { $0 } }.filter(\.randomEligible)
         for slot in eligible { #expect(reached.contains(slot.speciesId), "\(slot.speciesId) never reached") }
         #expect(!reached.contains("omegamon"))
+        #expect(!reached.contains("susanoomon"))
     }
 
     @Test(arguments: ["agu_ex", "gabu_ex"])
@@ -81,6 +82,58 @@ import Testing
             if checked == 5 { break }
         }
         #expect(checked > 0)
+    }
+
+    @Test func hatchPicksEachOfElevenCardsRoughlyEvenly() {
+        var counts: [String: Int] = [:]
+        for seed in 0..<2200 as Range<UInt64> {
+            let state = settled(steps: 500, seed: seed)
+            counts[state.monster.cardId ?? "", default: 0] += 1
+        }
+        #expect(Set(counts.keys) == Set(SpeciesCatalog.cards.map(\.id)))
+        // Expected 200 per card; a wide band only guards against a card being skipped or doubled.
+        for (card, count) in counts { #expect((120...280).contains(count), "\(card) \(count)") }
+    }
+
+    @Test(arguments: [("wolf_ex", "wanyamon"), ("agu_ex", "koromon")])
+    func sharedBotamonEvolvesInsideTheDrawnCard(cardId: String, nextSpecies: String) throws {
+        var checked = 0
+        for seed in 0..<2000 as Range<UInt64> {
+            var state = enrolled()
+            var generator = SeededGenerator(seed: seed)
+            state.settle(day: start, steps: 500, distance: nil, at: start, using: &generator)
+            guard state.monster.speciesId == "botamon", state.monster.cardId == cardId else { continue }
+            state.settle(day: start, steps: 10_000, distance: nil, at: start, using: &generator)
+            #expect(state.monster.speciesId == nextSpecies)
+            state.settle(day: start, steps: 30_000, distance: nil, at: start, using: &generator)
+            let card = try #require(SpeciesCatalog.card(id: cardId))
+            #expect(state.monster.cardId == cardId)
+            #expect(state.dex.dropFirst().allSatisfy { card.stage(of: $0.speciesId) != nil })
+            checked += 1
+            if checked == 5 { break }
+        }
+        #expect(checked > 0)
+    }
+
+    @Test func stageTwoWithTwoCandidatesStaysInsideThem() throws {
+        let card = try #require(SpeciesCatalog.card(id: "agni_ex"))
+        #expect(card.stages[2].map(\.speciesId) == ["flamon", "gottsumon"])
+        var seen = Set<String>()
+        for seed in 0..<2000 as Range<UInt64> {
+            let state = settled(steps: 15_000, seed: seed)
+            guard state.monster.cardId == "agni_ex" else { continue }
+            #expect(state.monster.stage == 2)
+            seen.insert(state.monster.speciesId)
+        }
+        #expect(seen == ["flamon", "gottsumon"])
+    }
+
+    @Test func jogressOnlySpeciesAreNeverReachedOnTheirOwnCards() {
+        for seed in 0..<2000 as Range<UInt64> {
+            let state = settled(steps: 30_000, seed: seed)
+            guard ["agni_ex", "wolf_ex"].contains(state.monster.cardId) else { continue }
+            #expect(state.monster.speciesId != "susanoomon")
+        }
     }
 
     @Test func largeFirstReadingEvolvesStageByStageAndRecordsEverything() {
