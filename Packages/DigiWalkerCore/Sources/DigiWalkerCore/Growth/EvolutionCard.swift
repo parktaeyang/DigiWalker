@@ -28,8 +28,11 @@ public struct EvolutionCard: Equatable, Sendable {
     public let displayName: String
     public let stages: [[CardSlot]]
 
-    /// Credited steps needed to reach `stage` (stage 0 hatches at 500, stage 1 at 10,000, stage 5 at 30,000).
-    public static func requiredSteps(stage: Int) -> Int { stage == 0 ? hatchSteps : stepsPerStage * (stage + 1) }
+    /// Cumulative credited steps needed to reach `stage`. The egg hatches at 500. After that each evolution needs
+    /// 5,000 more steps than the previous one (user decision, 2026-11-26): 5,000, 15,000, 30,000, 50,000, 75,000.
+    public static func requiredSteps(stage: Int) -> Int {
+        stage == 0 ? hatchSteps : stepsPerStage * stage * (stage + 1) / 2
+    }
 
     public func stage(of speciesId: String) -> Int? {
         stages.firstIndex { $0.contains { $0.speciesId == speciesId } }

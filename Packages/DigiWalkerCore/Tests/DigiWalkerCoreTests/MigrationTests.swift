@@ -54,7 +54,7 @@ import Testing
         #expect(after.monster.stage == 1)
         #expect(after.monster.speciesId == "koromon")
         #expect(after.dex.map(\.speciesId) == ["digitama", "botamon", "koromon"])
-        #expect(after.dex.map(\.firstMetSteps) == [0, 500, 10_000])
+        #expect(after.dex.map(\.firstMetSteps) == [0, 500, EvolutionCard.requiredSteps(stage: 1)])
         #expect(after.monster.id == before.monster.id)
         #expect(after.monster.experience == before.monster.experience)
         #expect(after.monster.totalCreditedSteps == before.monster.totalCreditedSteps)
@@ -94,7 +94,7 @@ import Testing
         let (_, after) = try migrate(LegacyFixtures.poyomon1600)
         #expect(after.monster.stage == 2)
         #expect(after.dex.count == 5) // digitama, poyomon, stage 0, 1, 2
-        #expect(after.dex.map(\.firstMetSteps) == [0, 500, 500, 10_000, 15_000])
+        #expect(after.dex.map(\.firstMetSteps) == [0, 500, 500, EvolutionCard.requiredSteps(stage: 1), EvolutionCard.requiredSteps(stage: 2)])
     }
 
     @Test func unknownSpeciesIsLeftAlone() throws {
@@ -121,7 +121,7 @@ import Testing
         #expect(restored == after)
     }
 
-    @Test(arguments: [0, 499, 500, 8_500])
+    @Test(arguments: [0, 499, 500, 4_500])
     func legacyStarterChainsIntoCatalog(steps: Int) throws {
         var state = GameState(speciesId: "starter_acorn", name: "도토롱", now: LegacyFixtures.createdAt, timeZone: .gmt)
         state.enroll(at: LegacyFixtures.createdAt)
@@ -130,7 +130,7 @@ import Testing
         state.migrateLegacyStarter(at: migratedAt, using: &generator)
         #expect(state.dex.first?.speciesId == "digitama")
         #expect(state.monster.isEgg == (steps < 500))
-        if steps == 8_500 {
+        if steps == 4_500 {
             #expect(state.monster.stage == 0)
             #expect(state.dex.count == 2)
         }

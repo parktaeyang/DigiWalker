@@ -263,7 +263,7 @@ public struct GameState: Codable, Equatable, Sendable {
         setSpecies(slot, card: card, at: date)
     }
 
-    /// Hatches an egg at 500 steps, evolves to stage 1 at 10,000, then one stage per 5,000 further steps, drawing separately each time.
+    /// Hatches an egg at 500 steps, then evolves at the cumulative thresholds of `EvolutionCard.requiredSteps`, drawing separately each time.
     private mutating func advanceIfReady(at date: Date, using generator: inout some RandomNumberGenerator) {
         if monster.isEgg, monster.totalCreditedSteps >= Monster.stepsToHatch {
             hatch(at: date, using: &generator)

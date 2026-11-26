@@ -28,31 +28,31 @@ import Testing
         var restored = try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state))
         restored.settle(day: tomorrow, steps: 1, distance: nil)
         #expect(restored == state)
-        // Total is 499 + 25,000 = 25,499: stage 4, so digitama + stages 0...4 = 6 entries.
-        restored.settle(day: tomorrow, steps: 25_000, distance: nil)
-        #expect(restored.monster.totalCreditedSteps == 25_499)
+        // Total is 499 + 50,000 = 50,499: stage 4, so digitama + stages 0...4 = 6 entries.
+        restored.settle(day: tomorrow, steps: 50_000, distance: nil)
+        #expect(restored.monster.totalCreditedSteps == 50_499)
         #expect(restored.monster.stage == 4)
         #expect(restored.monster.cardId == state.monster.cardId)
         #expect(restored.dex.count == 6)
         #expect(restored.dex.first?.speciesId == "digitama")
-        #expect(restored.dex.map(\.firstMetSteps) == [0, 500, 10_000, 15_000, 20_000, 25_000])
+        #expect(restored.dex.map(\.firstMetSteps) == [0] + (0...4).map(EvolutionCard.requiredSteps(stage:)))
         #expect(restored.dex.last?.speciesId == restored.monster.speciesId)
     }
 
     @Test func firstLargeReadingHatchesImmediately() throws {
         var state = GameState(now: start, timeZone: .gmt)
         state.enroll(at: start)
-        state.settle(day: start, steps: 8_030, distance: nil)
-        #expect(state.monster.stage == 0) // 8,030 steps: stage 0 (500...9,999)
+        state.settle(day: start, steps: 4_030, distance: nil)
+        #expect(state.monster.stage == 0) // 4,030 steps: stage 0 (500...4,999)
         #expect(state.dex.count == 2)
         #expect(state.dex.map(\.firstMetSteps) == [0, 500])
         #expect(state.dex.first?.speciesId == "digitama")
         #expect(state.dex.last?.speciesId == state.monster.speciesId)
-        #expect(state.monster.totalCreditedSteps == 8_030)
-        #expect(state.monster.experience == 800)
+        #expect(state.monster.totalCreditedSteps == 4_030)
+        #expect(state.monster.experience == 400)
     }
 
-    @Test(arguments: [0, 499, 500, 8_500]) func migrateSavedStarter(steps: Int) throws {
+    @Test(arguments: [0, 499, 500, 4_500]) func migrateSavedStarter(steps: Int) throws {
         var state = GameState(speciesId: "starter_acorn", name: "도토롱", now: start, timeZone: .gmt)
         state.enroll(at: start)
         state.settle(day: start, steps: steps, distance: 100)
