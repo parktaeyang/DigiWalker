@@ -32,7 +32,7 @@ final class AppDelegate: NSObject, WKApplicationDelegate {
                 // The settlement schedules the next refresh itself.
                 let game = game
                 let finish = BackgroundRun.run(
-                    work: { await game.refresh() },
+                    work: { await game.refresh(wake: .refresh) },
                     complete: { task.setTaskCompletedWithSnapshot(false) }
                 )
                 // The system may call this off the main actor, so the closure must not inherit MainActor isolation.

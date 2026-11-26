@@ -144,3 +144,16 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - **변경:** 진화에 필요한 걸음이 단계마다 늘어난다. 부화는 500걸음 그대로, 이후 누적 5,000 / 15,000 / 30,000 / 50,000 / 75,000걸음(단계 사이 5,000·10,000·15,000·20,000·25,000, 부화→유년기 II 첫 구간만 4,500)에 진화하고 75,000에서 궁극체로 멈춘다. `EvolutionCard.requiredSteps(stage:)`는 `stage == 0 ? hatchSteps : stepsPerStage * stage * (stage + 1) / 2`다. XP·레벨 규칙은 그대로다.
 - **기존 개체:** 퇴화하지 않는다. 이미 도달한 단계는 유지되고 다음 진화부터 새 표를 적용한다. 예: 15,000걸음 이상인 성장기는 다음 진화가 30,000걸음이다. 도감의 "N걸음에 진화" 기록은 기록 당시 값으로 남는다. 앱 PartnerGrowthView는 `requiredSteps`를 그대로 쓴다.
 - **테스트:** 코어 테스트는 `EvolutionCard.requiredSteps(stage:)`를 쓰도록 바꾸고 기준표는 `[500, 5_000, 15_000, 30_000, 50_000, 75_000]`을 명시 검증한다. 포요몬 레거시 픽스처(800)는 4,010걸음으로 조정했다(첫 진화 전 단계 유지 의도).
+
+## 워치 페이스 컴플리케이션(위젯 확장)과 진단 기록 · 2026-11-26
+
+- **서명(1단계 결과):** 위젯 확장 `DigiWalker Widgets`(번들 ID `ty.park.DigiWalker.watchkitapp.widgets`)를 워치 앱에 내장했다. 무료 Personal Team에서 위젯 확장과 App Group(`group.ty.park.DigiWalker`)이 모두 실기기용으로 서명됐다(워치 앱·확장의 codesign과 embedded.mobileprovision 양쪽에 application-groups 확인, ProvisionedDevices 4대, 설치하지 않음). **프로파일 만료:** 워치 앱·위젯 확장 2026-12-03 20:06 KST, iPhone 앱 2026-12-02 09:35 KST(iPhone 앱은 App Group이 없고 프로파일이 바뀌지 않았다). 재설치 마감은 가장 이른 12-02 09:35 기준이다.
+- **구조:** 육성 원본은 그대로 워치 앱 컨테이너의 `game-state.json`이고 스냅샷 스키마도 바꾸지 않았다. 워치 앱이 정산 commit 뒤(그리고 첫 로드 때) App Group에 표시용 사본 `widget-snapshot.json`을 원자적으로 쓰고, 위젯은 읽기만 한다. 사본 쓰기는 throw하지 않아 정산·알림에 영향이 없다. 리로드는 화면에 보이는 값(종·이름·단계·남은 걸음)이 바뀔 때만 요청하고, 걸음만 바뀐 경우 백그라운드에서는 마지막 리로드 후 30분이 지나야 한다(`WidgetReloadPolicy`). 궁극체 이후 쌓이는 걸음은 보이지 않으므로 리로드하지 않는다. 사본을 읽지 못한 위젯은 "앱을 열어 주세요"를 보이고 20분 뒤 다시 읽는다(읽을 수 있으면 갱신은 워치 앱이 주도). 알 수 없는 단계는 "최종 단계"로 표시하지 않고 최종 단계 문구는 `stage == stageCount - 1`일 때만 쓴다.
+- **지원 칸:** 직사각형(도트·이름·남은 걸음), 원형(도트), 모서리(도트 + 곡선 라벨), 인라인(이름·남은 걸음 텍스트). 도트는 대기 프레임 0번만 기기 픽셀 기준 정수 배율과 최근접 보간으로 그린다.
+- **진단 기록(`background-log.json`, 워치 홈 화면 맨 아래):** 백그라운드로 깨어난 경우만 기록한다. 앱이 활성(`.active`)이 아닐 때 도착한 앱 새로고침·HealthKit 콜백이 대상이고(활성 여부는 도착 시점에 확인, 이후 상태가 바뀌어도 도착 시점 기준), 앱이 열려 있을 때의 정산과 HealthKit 콜백은 기록하지 않는다. 최근 20건 링과 별개로 날짜별 횟수(최근 7일)와 마지막 시각을 저장해 "오늘 N회"가 20건에 묶이지 않는다. 깨어남은 도착 시각을 먼저 기록하고 정산이 끝나면 결과를 갱신한다(타임아웃·만료로 끊겨도 "도착 (결과 없음)"이 남는다). 기록 파일을 읽지 못하면 덮어쓰지 않고 메모리에만 두었다가 읽을 수 있게 되면 합친다. 정산은 자기 결과를 반환하며(공유 `lastOutcome` 제거) 합류한 호출자도 자기 결과를 받는다.
+- **검증한 환경:** `swift test --package-path Packages/DigiWalkerCore` 136개 통과. 워치 앱 테스트 71개 통과(Apple Watch Series 12 46mm, watchOS 27.2 시뮬레이터, build-for-testing + test-without-building). `DigiWalker` 스킴 iOS 시뮬레이터(generic) Debug 빌드 성공, 워치 실기기용 서명 빌드(본인 워치 지정, `-allowProvisioningUpdates -allowProvisioningDeviceRegistration`) 성공. 설치는 하지 않았다.
+- **미검증(실기기·페이스 확인 필요):** 페이스에서의 실제 렌더링, 틴트(accented) 페이스에서 도트가 단색이 되는지(`widgetAccentedRenderingMode(.fullColor)`는 컴파일만 확인), 작은 칸(원형·모서리)에서 도트 크기와 넘침, 컴플리케이션이 실제로 백그라운드 실행 예산을 늘리는지(진단 기록의 전후 비교로만 확인 가능), 위젯 확장 프로세스의 런타임과 Swift 6 격리(`PartnerEntry`·`PartnerProvider`를 `nonisolated`로 둠), 위젯 확장 메모리 한도, 잠금 상태에서의 App Group 파일 읽기·쓰기, 정산 뒤 컴플리케이션 갱신 지연, `.inactive`(손목 내림) 상태에서 도착한 콜백도 백그라운드로 집계되는 점.
+
+### 컴플리케이션 넣는 방법
+
+7단계 실기기 확인 후 작성한다.

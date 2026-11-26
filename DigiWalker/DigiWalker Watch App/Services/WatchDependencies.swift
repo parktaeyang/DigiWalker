@@ -163,6 +163,7 @@ extension WatchGameStore {
     static func inertForTestHost() -> WatchGameStore {
         WatchGameStore(health: InertHealth(), file: MemoryStateFile(), sync: InertPublisher(),
                        announcer: InertAnnouncer(), scheduler: NoRefreshScheduler(),
-                       activity: WatchAppActivity(), pending: MemoryPendingEvents(), observer: InertObserver())
+                       activity: WatchAppActivity(), pending: MemoryPendingEvents(), observer: InertObserver(),
+                       widget: InertWidgetPublisher(), wakeLog: MemoryBackgroundLog())
     }
 }

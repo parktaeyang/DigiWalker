@@ -11,6 +11,7 @@ struct WatchHomeView: View {
     @State private var presented: GrowthEvent?
     /// True from closing an alert until the pause before the next one ends. Only the pause task presents then.
     @State private var closing = false
+    @State private var showingLog = false
 
     var body: some View {
         ScrollView {
@@ -36,6 +37,14 @@ struct WatchHomeView: View {
                 if let message = game.message {
                     Text(message).font(.footnote).foregroundStyle(.secondary)
                 }
+                Button {
+                    showingLog = true
+                } label: {
+                    Text(game.wakeData.summary(now: .now))
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("backgroundLogSummary")
             }
             .frame(maxWidth: .infinity)
         }
@@ -54,6 +63,8 @@ struct WatchHomeView: View {
         .task(id: phase) {
             if phase == .active { await game.refresh() }
         }
+        .onAppear { game.loadWakeLog() }
+        .sheet(isPresented: $showingLog) { BackgroundLogView(entries: game.wakeData.entries) }
     }
 
     private func closeAlert() {
@@ -104,5 +115,25 @@ struct WatchHomeView: View {
         } else {
             SpriteView(species: species, pixelSize: 2)
         }
+    }
+}
+
+/// Recent wake-ups, newest first. For checking how often the system lets the app run in the background.
+struct BackgroundLogView: View {
+    let entries: [BackgroundLogEntry]
+
+    var body: some View {
+        List {
+            if entries.isEmpty {
+                Text("기록이 없어요").font(.footnote)
+            }
+            ForEach(entries.reversed()) { entry in
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(entry.at.formatted(.dateTime.month().day().hour().minute().second())).font(.caption2)
+                    Text("\(entry.source.label) · \(entry.outcome.label)").font(.caption)
+                }
+            }
+        }
+        .navigationTitle("백그라운드 기록")
     }
 }
