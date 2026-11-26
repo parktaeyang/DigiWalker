@@ -126,3 +126,21 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - **테스트:** `swift test --package-path Packages/DigiWalkerCore` 108개 통과, `swift test --package-path Tools/dim-extract` 37개 통과. `DigiWalkerTests`(iPhone 17, iOS 27.2 시뮬레이터) 통과.
 - **빌드·번들(시뮬레이터):** iPhone 17(iOS 27.2) `DigiWalker` 스킴과 Apple Watch Series 12 (46mm)(watchOS 27.2) 워치 스킴 Debug 빌드 성공. iPhone 앱 번들(`Debug-iphonesimulator/DigiWalker.app`) 10,540KB, 그중 `PrivateAssets/dim` PNG 183개 2,176KB. 워치 앱 번들(독립 빌드) 5,776KB, `PrivateAssets/dim` PNG 183개 2,176KB(iPhone 앱에 포함된 워치 앱도 183개). 두 번들 모두 `.bin` 없음.
 - **미확인:** 가안 이름 134개, 새 BIN 8장 픽셀이 카탈로그 원본과 같은지, 새 카드의 대기 프레임(0·1번) 가정과 도트 육안 확인, 새 카드 개체의 시뮬레이터 화면 확인과 도감 스크롤 성능, 실기기 설치·동작(하지 않음). 동기화 때 잠금 해제 아이템을 지급하는 로직은 범위 밖이다.
+
+## 백그라운드 정산과 부화·진화 워치 알림 · 2026-11-26
+
+- **트리거(실시간 아님):** (1) 앱 새로고침 `WKApplicationRefreshBackgroundTask`, 정산마다 약 45분 뒤로 하나만 예약(시스템이 실제 시각을 정함), (2) `HKObserverQuery`(걸음) + `enableBackgroundDelivery(.hourly)`, `com.apple.developer.healthkit.background-delivery` 엔타이틀먼트, (3) 앱이 활성화될 때. 세 경로 모두 같은 직렬 정산 하나를 부른다(겹친 요청은 기다리고, 시작 전 대기 중인 일반 요청은 하나로 합친다). HealthKit 백그라운드 전달은 앱 새로고침과 같은 예산을 공유하고 watchOS 26 이후 불규칙하다는 보고가 많아서, 알림은 수십 분에서 1시간 이상 늦거나 오지 않을 수 있다. 앱을 열면 바로 정산한다. 운동 세션·위치·확장 런타임은 쓰지 않는다.
+- **이벤트와 알림:** 부화·진화는 정산 저장(commit)이 성공한 뒤에만 만들어진다. 앱이 활성이면 햅틱(`.success`)과 alert, 아니면 로컬 알림을 등록한다. 이벤트는 commit 직후 `pending-growth-events.json`에 먼저 기록(write-ahead)하고 알림 등록이 성공하면 지운다. 알림을 못 보낸 이벤트(권한 없음, 등록 실패)만 다음 앱 실행 때 alert로 보여준다. 알림 등록이 진행 중인 이벤트는 alert에서 숨기고 ID로 하나씩 닫는다. 원장·몬스터 파일 스키마는 바꾸지 않았다. pending 파일 쓰기에 실패하면 다음 정산에서 다시 쓴다. 알림 권한은 건강 데이터 연결 뒤(앱이 활성일 때) 요청하고, 허용 상태에서 화면에 지연 안내를 보여준다.
+- **스냅샷 전송:** `session.applicationContext`(마지막으로 제출에 성공한 값)를 디코딩해 monster.id와 revision이 같으면 `updateApplicationContext`를 생략한다. 제출이 실패하면 값이 바뀌지 않아 다시 보낸다. iPhone 수신 쪽 revision 비교는 그대로다.
+- **무료 팀 서명 확인(1단계):** 무료 Personal Team에서 background-delivery 키를 넣은 워치 앱이 실기기용으로 서명됐다(codesign과 embedded.mobileprovision 양쪽에 키 있음, 설치하지 않음). 프로파일 만료 2026-12-02 09:36 KST.
+- **검증한 환경:** `swift test --package-path Packages/DigiWalkerCore` 118개 통과. 워치 앱 테스트 36개 통과(Apple Watch Series 12 46mm, watchOS 27.2 시뮬레이터, build-for-testing + test-without-building), iPhone 17(iOS 27.2) 시뮬레이터 빌드 성공. 최종 코드로 워치 실기기용(arm64_32) 서명 빌드(`generic/platform=watchOS`, `-allowProvisioningUpdates -allowProvisioningDeviceRegistration`)를 다시 실행해 성공했다(설치 안 함).
+- **전송 복구 경로:** `sessionCompanionAppInstalledDidChange`에서 iPhone 앱이 설치됨(true)이거나 `sessionReachabilityDidChange`에서 연결 가능(true)이 되면 같은 revision 생략을 건너뛰고 강제 전송한다(재설치·캐시 유실 복구). 평소 경로는 그대로 생략한다. 강제 플래그는 `SnapshotSendPolicy.shouldSend(force:)` 단위 테스트로 확인했다. `expirationHandler`는 메인 스레드에서 불리면 `MainActor.assumeIsolated`로 즉시 완료하고 아니면 `Task { @MainActor }`로 넘긴다.
+- **미검증:** 실기기에서의 알림 도착과 진동, 도착까지의 지연, observer·앱 새로고침 실제 전달 빈도, 배터리 사용량, 손목에서 뺀 상태의 HealthKit 조회·파일 쓰기, `expirationHandler` 실동작(메인 밖 호출 포함), 알림이 워치와 iPhone에서 어떻게 중복·표시되는지, 시뮬레이터에서의 백그라운드 새로고침 실행.
+- **미해결 위험:** 이벤트를 원장·몬스터 파일과 한 번에 원자적으로 저장하지는 않는다(스키마 변경이 필요해 보류). 정산 저장과 pending 쓰기 사이에 프로세스가 끝나거나 pending 쓰기가 실패한 직후 끝나면 그 이벤트의 알림이 사라질 수 있다.
+- **추가 미해결 위험·미검증:** (a) 알림이 시스템에 등록된 직후 pending 삭제 전에 프로세스가 끝나면 다음 실행 때 같은 이벤트가 alert로 한 번 더 뜰 수 있다(write-ahead 선택의 대가). (b) HealthKit이 앱을 깨웠는데 게임 파일 읽기가 실패하면(재부팅 후 첫 잠금 해제 전 등) observer가 설치되지 않아 전달을 확인하지 못하고, 반복되면 HealthKit이 전달 빈도를 줄일 수 있다. (c) `expirationHandler` 호출 스레드와 완료 타이밍은 실기기에서 확인하지 못했다. (d) 비활성 상태에서 alert가 설정됐다가 시스템이 내리면 보지 못한 이벤트가 닫힘 처리될 가능성이 있다(실기기 확인 필요). (e) iPhone 재설치 시 워치 applicationContext 유지 여부는 미확인이다(강제 전송으로 대응). (f) 컴플리케이션이 없으면 watchOS가 백그라운드 새로고침 예산을 적게 줄 수 있어 실제 알림 빈도는 실기기 측정이 필요하다.
+
+## 진화 기준 점증(사용자 결정, 2026-11-26)
+
+- **변경:** 진화에 필요한 걸음이 단계마다 늘어난다. 부화는 500걸음 그대로, 이후 누적 5,000 / 15,000 / 30,000 / 50,000 / 75,000걸음(단계 사이 5,000·10,000·15,000·20,000·25,000, 부화→유년기 II 첫 구간만 4,500)에 진화하고 75,000에서 궁극체로 멈춘다. `EvolutionCard.requiredSteps(stage:)`는 `stage == 0 ? hatchSteps : stepsPerStage * stage * (stage + 1) / 2`다. XP·레벨 규칙은 그대로다.
+- **기존 개체:** 퇴화하지 않는다. 이미 도달한 단계는 유지되고 다음 진화부터 새 표를 적용한다. 예: 15,000걸음 이상인 성장기는 다음 진화가 30,000걸음이다. 도감의 "N걸음에 진화" 기록은 기록 당시 값으로 남는다. 앱 PartnerGrowthView는 `requiredSteps`를 그대로 쓴다.
+- **테스트:** 코어 테스트는 `EvolutionCard.requiredSteps(stage:)`를 쓰도록 바꾸고 기준표는 `[500, 5_000, 15_000, 30_000, 50_000, 75_000]`을 명시 검증한다. 포요몬 레거시 픽스처(800)는 4,010걸음으로 조정했다(첫 진화 전 단계 유지 의도).

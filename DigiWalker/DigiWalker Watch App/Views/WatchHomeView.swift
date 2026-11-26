@@ -3,12 +3,14 @@ import SwiftUI
 
 struct WatchHomeView: View {
     @ObservedObject var game: WatchGameStore
-    private struct Event: Identifiable { let id = UUID(); let title: String; let message: String }
-    @State private var event: Event?
     #if DEBUG
     @State private var previewIndex = 0
     #endif
     @Environment(\.scenePhase) private var phase
+    /// The event the alert is showing. Tracked here so the next queued event gets a fresh presentation.
+    @State private var presented: GrowthEvent?
+    /// True from closing an alert until the pause before the next one ends. Only the pause task presents then.
+    @State private var closing = false
 
     var body: some View {
         ScrollView {
@@ -25,30 +27,45 @@ struct WatchHomeView: View {
                     Task { await game.refresh(requestAccess: true) }
                 }
                 .disabled(game.busy)
+                if game.notificationsEnabled == false {
+                    Text("알림이 꺼져 있어 앱을 열 때만 알려 드려요").font(.footnote).foregroundStyle(.secondary)
+                } else if game.notificationsEnabled == true {
+                    Text("앱을 닫아 두어도 부화·진화를 알려 드려요. 알림은 수십 분에서 1시간 정도 늦을 수 있어요.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 if let message = game.message {
                     Text(message).font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .frame(maxWidth: .infinity)
         }
-        .onChange(of: game.state?.monster.speciesId) { previous, current in
-            // nil -> value is the initial load: no alert. A multi-stage jump arrives as one change (final species).
-            guard let previous, let current, previous != current else { return }
-            let name = game.state?.monster.name ?? current
-            if previous == Monster.eggSpeciesId {
-                event = Event(title: "디지타마가 부화했어요!", message: "새 모습 · \(name)")
-            } else {
-                let old = SpeciesCatalog.info(id: previous)?.name ?? previous
-                event = Event(title: "\(old)이(가) 진화했어요!", message: "새 모습 · \(name)")
-            }
-        }
-        .alert(event?.title ?? "", isPresented: Binding(get: { event != nil }, set: { if !$0 { event = nil } })) {
+        .alert(presented?.title ?? "", isPresented: Binding(
+            get: { presented != nil },
+            set: { if !$0 { closeAlert() } }
+        )) {
             Button("확인", role: .cancel) { }
         } message: {
-            Text(event?.message ?? "")
+            Text(presented?.body ?? "")
+        }
+        // First presentation only; the next queued event is presented by closeAlert after its pause.
+        .onChange(of: game.presentableAlerts, initial: true) { _, _ in
+            if presented == nil, !closing { presented = game.pendingAlert }
         }
         .task(id: phase) {
             if phase == .active { await game.refresh() }
+        }
+    }
+
+    private func closeAlert() {
+        guard let shown = presented else { return }
+        closing = true
+        presented = nil
+        game.dismissAlert(id: shown.id)
+        // Present the next queued event after this alert has fully gone away.
+        Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            closing = false
+            if presented == nil { presented = game.pendingAlert }
         }
     }
 

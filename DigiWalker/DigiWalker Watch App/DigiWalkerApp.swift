@@ -9,11 +9,11 @@ import SwiftUI
 
 @main
 struct DigiWalker_Watch_AppApp: App {
-    @StateObject private var game = WatchGameStore()
+    @WKApplicationDelegateAdaptor private var delegate: AppDelegate
 
     var body: some Scene {
         WindowGroup {
-            WatchHomeView(game: game)
+            WatchHomeView(game: delegate.game)
         }
     }
 }
