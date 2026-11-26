@@ -5,8 +5,8 @@ import Testing
 @Suite struct GrowthEventTests {
     private let start = Date(timeIntervalSince1970: 1_800_000_000)
 
-    private func enrolled() -> GameState {
-        var state = GameState(now: start, timeZone: .gmt)
+    private func enrolled(id: UUID = testPartnerId(1)) -> GameState {
+        var state = GameState.fixedEgg(now: start, id: id)
         state.enroll(at: start)
         return state
     }
@@ -89,7 +89,7 @@ import Testing
 
     @Test func noEventForDifferentGeneration() {
         let a = settled(enrolled(), steps: 600)
-        let b = settled(enrolled(), steps: 10_000)
+        let b = settled(enrolled(id: testPartnerId(2)), steps: 10_000)
         #expect(a.monster.id != b.monster.id)
         #expect(GrowthEvent.between(a, b) == nil)
     }

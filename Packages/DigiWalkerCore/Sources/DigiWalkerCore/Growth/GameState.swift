@@ -82,13 +82,19 @@ public struct GameState: Codable, Equatable, Sendable {
     public private(set) var observedAt: Date?
     /// Species met by this partner generation, in the order they were met. Never contains duplicates.
     public private(set) var dex: [DexEntry] = []
+    /// Items received so far, oldest first. Belongs to the whole game, so it stays for the next partner.
+    /// Duplicates are allowed (a count), but `(monsterId, segment)` is unique. Items are never consumed.
+    public private(set) var items: [ItemGrant] = []
+    /// Last 5,000-step segment of the current partner whose drop was already rolled (win or lose).
+    public private(set) var itemSegmentsRolled = 0
 
     public init(now: Date = .now, timeZone: TimeZone = .current) {
         self.init(speciesId: Monster.eggSpeciesId, name: Monster.eggName, now: now, timeZone: timeZone)
     }
 
-    init(speciesId: String, name: String, now: Date = .now, timeZone: TimeZone = .current) {
-        monster = Monster(id: UUID(), speciesId: speciesId, name: name)
+    /// `monsterId` is only chosen by tests (item drops depend on it); the app always lets it be random.
+    init(speciesId: String, name: String, now: Date = .now, timeZone: TimeZone = .current, monsterId: UUID = UUID()) {
+        monster = Monster(id: monsterId, speciesId: speciesId, name: name)
         createdAt = now
         self.timeZone = timeZone
         if monster.isEgg { recordDex(speciesId: speciesId, steps: 0, at: now, cardId: nil) }
@@ -96,6 +102,7 @@ public struct GameState: Codable, Equatable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case monster, createdAt, timeZone, revision, enrolledAt, lastStepDay, ledgers, todaySteps, observedAt, dex
+        case items, itemSegmentsRolled
     }
 
     // Files written before evolution cards existed have no `dex` key; keep them readable.
@@ -128,7 +135,59 @@ public struct GameState: Codable, Equatable, Sendable {
                 debugDescription: "dex has an empty or duplicate speciesId or negative steps")
         }
         dex = decodedDex ?? []
+        // Files from before items existed have neither key: start at the current segment so nothing is granted
+        // retroactively. Decided here, so reading the same file again gives the same result. Exactly one of the two
+        // keys, or a null value, is a damaged save (decoding throws and the file is kept).
+        let decodedItems: [ItemGrant]
+        let rolled: Int
+        if c.contains(.items) || c.contains(.itemSegmentsRolled) {
+            decodedItems = try c.decode([ItemGrant].self, forKey: .items)
+            rolled = try c.decode(Int.self, forKey: .itemSegmentsRolled)
+            // The checkpoint always equals the current partner's segment count (settle rolls right after steps change).
+            guard rolled == ItemDrop.segment(forSteps: monster.totalCreditedSteps) else {
+                throw DecodingError.dataCorruptedError(forKey: .itemSegmentsRolled, in: c,
+                    debugDescription: "itemSegmentsRolled \(rolled) does not match \(monster.totalCreditedSteps) credited steps")
+            }
+        } else {
+            decodedItems = []
+            rolled = ItemDrop.segment(forSteps: monster.totalCreditedSteps)
+        }
+        var seenGrants = Set<String>()
+        let validItems = rolled >= 0 && decodedItems.allSatisfy { grant in
+            grant.segment >= 1 && !grant.itemId.isEmpty
+                && (grant.monsterId != monster.id || grant.segment <= rolled)
+                && seenGrants.insert("\(grant.monsterId.uuidString)#\(grant.segment)").inserted
+        }
+        guard validItems else {
+            throw DecodingError.dataCorruptedError(forKey: .items, in: c,
+                debugDescription: "items have a duplicate or out-of-range segment, or an empty id")
+        }
+        items = decodedItems
+        itemSegmentsRolled = rolled
     }
+
+    /// What the iPhone gets: one entry per item id (first grant order), not the whole ledger, so the snapshot
+    /// stays small however many items were found.
+    public var itemSummaries: [ItemSummary] {
+        var order: [String] = []
+        var found: [String: ItemSummary] = [:]
+        for grant in items {
+            let current = grant.monsterId == monster.id ? 1 : 0
+            if let known = found[grant.itemId] {
+                found[grant.itemId] = ItemSummary(itemId: grant.itemId, count: known.count + 1,
+                                                  firstGrantedAt: min(known.firstGrantedAt, grant.grantedAt),
+                                                  currentPartnerCount: known.currentPartnerCount + current)
+            } else {
+                order.append(grant.itemId)
+                found[grant.itemId] = ItemSummary(itemId: grant.itemId, count: 1, firstGrantedAt: grant.grantedAt,
+                                                  currentPartnerCount: current)
+            }
+        }
+        return order.compactMap { found[$0] }
+    }
+
+    public func count(of itemId: String) -> Int { items.lazy.filter { $0.itemId == itemId }.count }
+    public func owns(_ itemId: String) -> Bool { items.contains { $0.itemId == itemId } }
 
     public var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
@@ -148,6 +207,14 @@ public struct GameState: Codable, Equatable, Sendable {
     /// `at` is the settlement time recorded in the dex (defaults to `day`).
     public mutating func settle(day: Date, steps: Int?, distance: Double?, at: Date? = nil,
                                 using generator: inout some RandomNumberGenerator) {
+        settle(day: day, steps: steps, distance: distance, at: at, committedCardId: monster.cardId, using: &generator)
+    }
+
+    /// `committedCardId` is the partner's card in the state a whole reconcile started from (nil: none yet). Only that
+    /// card narrows the item draw, so a card drawn later in the same batch never changes the drops, and neither does
+    /// the wall clock.
+    public mutating func settle(day: Date, steps: Int?, distance: Double?, at: Date? = nil,
+                                committedCardId: String?, using generator: inout some RandomNumberGenerator) {
         guard let enrolledAt, day >= calendar.startOfDay(for: enrolledAt) else { return }
         let key = calendar.startOfDay(for: day)
         var ledger = ledgers[key] ?? DailyActivityLedger()
@@ -166,6 +233,7 @@ public struct GameState: Codable, Equatable, Sendable {
         }
         if ledger != (ledgers[key] ?? DailyActivityLedger()) {
             ledgers[key] = ledger
+            rollItems(at: at ?? day, committedCardId: committedCardId)
             advanceIfReady(at: at ?? day, using: &generator)
             revision += 1
         }
@@ -231,6 +299,29 @@ public struct GameState: Codable, Equatable, Sendable {
         }
     }
 
+    /// Rolls every 5,000-step segment not rolled yet, one at a time. Runs before evolution so an item found in
+    /// this settlement can unlock that evolution. Uses `ItemDrop`, never the evolution generator.
+    private mutating func rollItems(at date: Date, committedCardId: String?) {
+        let reached = ItemDrop.segment(forSteps: monster.totalCreditedSteps)
+        while itemSegmentsRolled < reached {
+            let segment = itemSegmentsRolled + 1
+            itemSegmentsRolled = segment
+            // A grant for this segment already on file (never expected) is kept; no second one is added.
+            guard !items.contains(where: { $0.monsterId == monster.id && $0.segment == segment }),
+                  let itemId = ItemDrop.roll(monsterId: monster.id, segment: segment, preferred: preferredItemIds(committedCardId: committedCardId))
+            else { continue }
+            items.append(ItemGrant(itemId: itemId, monsterId: monster.id, segment: segment, grantedAt: date))
+        }
+    }
+
+    /// Items still missing that would unlock a species on the current card. Only a card that was already fixed when
+    /// the reconcile started counts: a card drawn during this very reconcile differs between retries after a failed
+    /// save, so those segments roll over the whole catalog instead. No wall clock is involved.
+    private func preferredItemIds(committedCardId: String?) -> [String] {
+        guard let card = monster.card, card.id == committedCardId else { return [] }
+        return card.requiredItemIds.filter { !owns($0) }
+    }
+
     private func stageThreshold(_ stage: Int?) -> Int {
         stage.map(EvolutionCard.requiredSteps(stage:)) ?? monster.totalCreditedSteps
     }
@@ -271,7 +362,7 @@ public struct GameState: Codable, Equatable, Sendable {
         while let card = monster.card, let stage = card.stage(of: monster.speciesId),
               stage + 1 < EvolutionCard.stageCount,
               monster.totalCreditedSteps >= EvolutionCard.requiredSteps(stage: stage + 1),
-              let slot = Self.pick(card.eligible(stage: stage + 1), using: &generator) {
+              let slot = Self.pick(card.eligible(stage: stage + 1, owning: Set(items.map(\.itemId))), using: &generator) {
             setSpecies(slot, card: card, at: date)
         }
     }
@@ -287,13 +378,13 @@ public struct GameState: Codable, Equatable, Sendable {
     public var snapshot: MonsterSnapshot {
         MonsterSnapshot(schemaVersion: MonsterSnapshot.currentSchemaVersion, revision: revision, createdAt: createdAt,
                         monster: monster, todaySteps: todaySteps, observedAt: observedAt, timeZone: timeZone,
-                        dex: dex)
+                        dex: dex, items: itemSummaries)
     }
 }
 
 public struct MonsterSnapshot: Codable, Equatable, Sendable {
-    public static let currentSchemaVersion = 2
-    public static let supportedSchemaVersions: Set<Int> = [1, 2]
+    public static let currentSchemaVersion = 3
+    public static let supportedSchemaVersions: Set<Int> = [1, 2, 3]
 
     public let schemaVersion: Int
     public let revision: Int
@@ -304,9 +395,12 @@ public struct MonsterSnapshot: Codable, Equatable, Sendable {
     public let timeZone: TimeZone?
     /// Nil for v1 snapshots (the watch had no dex yet).
     public let dex: [DexEntry]?
+    /// Nil before v3 (the watch had no items yet). v3 always carries the summary, possibly empty. The full ledger
+    /// (ids, times) stays in the watch's state file.
+    public let items: [ItemSummary]?
 
     public init(schemaVersion: Int, revision: Int, createdAt: Date, monster: Monster, todaySteps: Int?,
-                observedAt: Date?, timeZone: TimeZone?, dex: [DexEntry]? = nil) {
+                observedAt: Date?, timeZone: TimeZone?, dex: [DexEntry]? = nil, items: [ItemSummary]? = nil) {
         self.schemaVersion = schemaVersion
         self.revision = revision
         self.createdAt = createdAt
@@ -315,10 +409,11 @@ public struct MonsterSnapshot: Codable, Equatable, Sendable {
         self.observedAt = observedAt
         self.timeZone = timeZone
         self.dex = dex
+        self.items = items
     }
 
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, revision, createdAt, monster, todaySteps, observedAt, timeZone, dex
+        case schemaVersion, revision, createdAt, monster, todaySteps, observedAt, timeZone, dex, items
     }
 
     public init(from decoder: Decoder) throws {
@@ -331,6 +426,7 @@ public struct MonsterSnapshot: Codable, Equatable, Sendable {
         observedAt = try c.decodeIfPresent(Date.self, forKey: .observedAt)
         timeZone = try c.decodeIfPresent(TimeZone.self, forKey: .timeZone)
         dex = try c.decodeIfPresent([DexEntry].self, forKey: .dex)
+        items = try c.decodeIfPresent([ItemSummary].self, forKey: .items)
     }
 
     private var hasValidDex: Bool {
@@ -342,13 +438,34 @@ public struct MonsterSnapshot: Codable, Equatable, Sendable {
             && seen.contains(monster.speciesId)
     }
 
+    private var hasValidItems: Bool {
+        // Like the dex: older versions must not carry items, so they cannot skip the v3 checks.
+        guard schemaVersion >= 3 else { return items == nil }
+        guard let items else { return false }
+        var seen = Set<String>()
+        // The current partner cannot have found more items than it has 5,000-step segments.
+        let limit = ItemDrop.segment(forSteps: monster.totalCreditedSteps)
+        var fromCurrent = 0
+        for item in items {
+            guard !item.itemId.isEmpty, item.count >= 1, (0...item.count).contains(item.currentPartnerCount),
+                  seen.insert(item.itemId).inserted else { return false }
+            // Compare before adding so a crafted huge count cannot overflow.
+            guard item.currentPartnerCount <= limit - fromCurrent else { return false }
+            fromCurrent += item.currentPartnerCount
+        }
+        return true
+    }
+
     public func supersedes(_ cached: Self?) -> Bool {
         guard Self.supportedSchemaVersions.contains(schemaVersion), revision >= 0, monster.experience >= 0,
               monster.totalCreditedSteps >= 0, monster.distanceMeters >= 0,
               (todaySteps ?? 0) >= 0, !monster.name.isEmpty, !monster.speciesId.isEmpty,
-              hasValidDex else { return false }
+              hasValidDex, hasValidItems else { return false }
         guard let cached else { return true }
-        if monster.id == cached.monster.id { return revision > cached.revision }
+        // Same partner and revision: only a higher schema replaces it (a watch update republishes v2 as v3).
+        if monster.id == cached.monster.id {
+            return revision > cached.revision || (revision == cached.revision && schemaVersion > cached.schemaVersion)
+        }
         return createdAt > cached.createdAt
     }
 }

@@ -10,13 +10,16 @@ enum NotificationFailure: LocalizedError {
 
 /// Foreground haptic and background local notification for hatches and evolutions.
 struct GrowthNotifier: GrowthAnnouncing {
-    /// One identifier per transition, so registering the same one twice leaves a single notification.
+    /// One identifier per transition (or per item segment), so registering the same one twice leaves a single notification.
     static func identifier(for event: GrowthEvent) -> String {
-        "growth-\(event.monsterId.uuidString)-\(event.toSpeciesId)"
+        if event.kind == .itemFound, let segment = event.segment {
+            return "item-\(event.monsterId.uuidString)-\(segment)"
+        }
+        return "growth-\(event.monsterId.uuidString)-\(event.toSpeciesId)"
     }
 
     func playHaptic(for event: GrowthEvent) {
-        // Hatch and evolution share one success haptic.
+        // Hatch, evolution and item finds share one success haptic.
         WKInterfaceDevice.current().play(.success)
     }
 

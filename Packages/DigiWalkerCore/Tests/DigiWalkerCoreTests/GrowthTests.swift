@@ -62,7 +62,7 @@ import Testing
     }
 
     @Test func ignoreStaleDuplicateAndSupersededGeneration() throws {
-        var game = GameState(now: start, timeZone: .gmt) // dex is required from schema v2 on
+        var game = GameState.fixedEgg(now: start) // dex is required from schema v2 on
         let first = game.snapshot
         game.recordObservation(steps: 100, at: start)
         let second = game.snapshot
@@ -70,10 +70,10 @@ import Testing
         #expect(second.supersedes(first))
         #expect(!second.supersedes(second))
         #expect(!first.supersedes(second))
-        let replacement = GameState(now: start.addingTimeInterval(10), timeZone: .gmt).snapshot
+        let replacement = GameState.fixedEgg(now: start.addingTimeInterval(10), id: testPartnerId(2)).snapshot
         #expect(replacement.supersedes(second))
         #expect(!second.supersedes(replacement))
-        let unknownVersion = MonsterSnapshot(schemaVersion: 3, revision: 5, createdAt: start,
+        let unknownVersion = MonsterSnapshot(schemaVersion: 4, revision: 5, createdAt: start,
             monster: game.monster, todaySteps: nil, observedAt: nil, timeZone: .gmt)
         #expect(!unknownVersion.supersedes(nil))
     }

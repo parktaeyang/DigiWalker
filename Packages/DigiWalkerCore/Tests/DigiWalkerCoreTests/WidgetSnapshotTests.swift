@@ -4,7 +4,7 @@ import Testing
 
 private let t0 = Date(timeIntervalSince1970: 1_800_000_000)
 
-private func egg() -> GameState { GameState(now: t0, timeZone: .gmt) }
+private func egg() -> GameState { GameState.fixedEgg(now: t0) }
 
 /// Same-day settlement: the daily credit only ever grows, so a larger `steps` adds the difference.
 private func settled(_ state: GameState, steps: Int) -> GameState {

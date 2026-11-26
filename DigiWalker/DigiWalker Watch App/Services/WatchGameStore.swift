@@ -7,7 +7,7 @@ final class WatchGameStore: ObservableObject {
     @Published private(set) var state: GameState?
     @Published private(set) var message: String?
     @Published private(set) var busy = false
-    /// Hatches and evolutions waiting for the foreground alert, oldest first. Persisted until dismissed,
+    /// Hatches, evolutions and item finds waiting for the foreground alert, oldest first. Persisted until dismissed,
     /// so an event that could not be delivered as a notification survives the app being killed.
     @Published private(set) var alerts: [GrowthEvent] = []
     /// Nil until the permission state is known.
@@ -160,18 +160,20 @@ final class WatchGameStore: ObservableObject {
                 try commit(candidate)
                 // Write-ahead: the event is recorded synchronously right after the commit, before anything can
                 // suspend, so a stop during delivery cannot lose it. Only a committed settlement makes events.
-                let event = GrowthEvent.between(saved, candidate)
+                // Items found in this settlement come first, then the hatch or evolution (one event per item).
+                let events = GrowthEvent.items(between: saved, candidate)
+                    + (GrowthEvent.between(saved, candidate).map { [$0] } ?? [])
                 let foreground = activity.isActive
-                if let event {
-                    // Hidden from the alert from the moment it is queued, so an activation while the
-                    // notification is in flight cannot show it twice.
-                    if !foreground { notifying.insert(event.id) }
-                    enqueueAlert(event)
-                }
-                outcome = event == nil ? .settled : .growth
+                // Hidden from the alert from the moment they are queued, so an activation while the
+                // notification is in flight cannot show them twice.
+                if !foreground { events.forEach { notifying.insert($0.id) } }
+                enqueueAlerts(events)
+                outcome = events.isEmpty ? .settled : .growth
                 sync.publish(candidate.snapshot)
                 publishWidget(candidate)
-                if let event { await deliver(event, foreground: foreground) }
+                for (index, event) in events.enumerated() {
+                    await deliver(event, foreground: foreground, haptic: index == 0)
+                }
             } else {
                 // Nothing new to commit, but a step change held back earlier may be due for a reload; the
                 // publisher compares with its own reload record and skips when there is nothing to do.
@@ -318,10 +320,15 @@ final class WatchGameStore: ObservableObject {
         }
     }
 
-    private func enqueueAlert(_ event: GrowthEvent) {
-        guard !alerts.contains(event) else { return }
-        alerts.append(event)
-        persistAlerts()
+    /// One settlement's events are queued in order and written together, so a stop in between cannot keep the
+    /// first item event but lose the evolution after it.
+    private func enqueueAlerts(_ events: [GrowthEvent]) {
+        var added = false
+        for event in events where !alerts.contains(event) {
+            alerts.append(event)
+            added = true
+        }
+        if added { persistAlerts() }
     }
 
     private func persistAlerts() {
@@ -341,9 +348,10 @@ final class WatchGameStore: ObservableObject {
 
     /// The event is already queued (write-ahead). In the foreground it stays as an alert; in the background
     /// it is dropped once the system accepted the notification, and kept for the next activation otherwise.
-    private func deliver(_ event: GrowthEvent, foreground: Bool) async {
+    /// In the foreground only the first event of a settlement vibrates; the rest wait as alerts.
+    private func deliver(_ event: GrowthEvent, foreground: Bool, haptic: Bool) async {
         if foreground {
-            announcer.playHaptic(for: event)
+            if haptic { announcer.playHaptic(for: event) }
             return
         }
         do {

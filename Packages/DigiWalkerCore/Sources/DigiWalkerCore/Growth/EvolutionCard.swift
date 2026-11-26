@@ -6,11 +6,14 @@ public struct CardSlot: Equatable, Sendable {
     public let dimIndex: Int
     /// False for species that random evolution must never pick (Omegamon is Jogress-only).
     public let randomEligible: Bool
+    /// Item the partner must own before random evolution may pick this species (nil = no item needed).
+    public let requiredItemId: String?
 
-    public init(speciesId: String, dimIndex: Int, randomEligible: Bool = true) {
+    public init(speciesId: String, dimIndex: Int, randomEligible: Bool = true, requiredItemId: String? = nil) {
         self.speciesId = speciesId
         self.dimIndex = dimIndex
         self.randomEligible = randomEligible
+        self.requiredItemId = requiredItemId
     }
 }
 
@@ -46,13 +49,25 @@ public struct EvolutionCard: Equatable, Sendable {
         guard stages.indices.contains(stage) else { return [] }
         return stages[stage].filter(\.randomEligible)
     }
+
+    /// Candidates for random evolution: item-locked species only count when their item is owned.
+    public func eligible(stage: Int, owning items: Set<String>) -> [CardSlot] {
+        eligible(stage: stage).filter { $0.requiredItemId.map(items.contains) ?? true }
+    }
+
+    /// Items that would unlock a species on this card, in card order, without duplicates.
+    public var requiredItemIds: [String] {
+        var seen = Set<String>()
+        return stages.flatMap { $0 }.compactMap(\.requiredItemId).filter { seen.insert($0).inserted }
+    }
 }
 
 extension EvolutionCard {
-    private static func slot(_ id: String, _ index: Int, eligible: Bool = true) -> CardSlot {
-        CardSlot(speciesId: id, dimIndex: index, randomEligible: eligible)
+    private static func slot(_ id: String, _ index: Int, eligible: Bool = true, needs item: String? = nil) -> CardSlot {
+        CardSlot(speciesId: id, dimIndex: index, randomEligible: eligible, requiredItemId: item)
     }
 
+    // `needs:` marks the original unlock-required species; the item mapping is an app rule (2026-11-26).
     // Species slots come from the DIM Modifier catalog checked on 2026-11-25. Evolution links are an app rule
     // (random within the card), not the original chart.
     public static let agumonEX = EvolutionCard(
@@ -65,7 +80,7 @@ extension EvolutionCard {
             [slot("metalgreymon_vaccine", 7), slot("andromon", 8), slot("anomalocarimon", 9),
              slot("mamemon", 10), slot("neodevimon", 11), slot("metaltyranomon", 12)],
             [slot("wargreymon", 13), slot("omegamon", 14, eligible: false), slot("blitzgreymon", 15),
-             slot("donedevimon", 16)],
+             slot("donedevimon", 16, needs: "digicore")],
         ])
 
     public static let gabumonEX = EvolutionCard(
@@ -106,7 +121,7 @@ extension EvolutionCard {
             [slot("rapidmon", 7), slot("sinduramon", 8), slot("makuramon", 9),
              slot("andiramon_deva", 10), slot("pajiramon", 11), slot("andiramon", 12)],
             [slot("saintgalgomon", 13), slot("cherubimon_virtue", 14), slot("cherubimon_vice", 15),
-             slot("rapidmon_armor", 16)],
+             slot("rapidmon_armor", 16, needs: "digimental_fate")],
         ])
 
     public static let renamonEX = EvolutionCard(
@@ -119,7 +134,7 @@ extension EvolutionCard {
             [slot("kumbhiramon", 7), slot("vikaralamon", 8), slot("taomon", 9),
              slot("doumon", 10), slot("caturamon", 11), slot("indaramon", 12)],
             [slot("sakuyamon", 13), slot("parasimon", 14), slot("kuzuhamon_miko", 15),
-             slot("sakuyamon_x", 16)],
+             slot("sakuyamon_x", 16, needs: "x_antibody")],
         ])
 
     public static let agnimonEX = EvolutionCard(
@@ -145,7 +160,7 @@ extension EvolutionCard {
             [slot("jetsilphymon", 8), slot("shutumon", 9), slot("petaldramon", 10),
              slot("peacockmon", 11), slot("zamielmon", 12)],
             [slot("ancientirismon", 13), slot("lotusmon", 14), slot("ancienttroiamon", 15),
-             slot("lordknightmon", 16)],
+             slot("lordknightmon", 16, needs: "digicore")],
         ])
 
     public static let chackmonEX = EvolutionCard(
@@ -158,7 +173,7 @@ extension EvolutionCard {
             [slot("daipenmon", 8), slot("blizzarmon", 9), slot("panjyamon_x", 10),
              slot("nanomon", 11), slot("astamon", 12)],
             [slot("olegmon", 13), slot("frosvelgrmon", 14), slot("ancientmegatheriumon", 15),
-             slot("dynasmon", 16)],
+             slot("dynasmon", 16, needs: "digicore")],
         ])
 
     public static let wolfmonEX = EvolutionCard(
@@ -185,7 +200,7 @@ extension EvolutionCard {
             [slot("rhinokabuterimon", 8), slot("bolgmon", 9), slot("sephirothmon", 10),
              slot("metallifekuwagamon", 11), slot("wisemon", 12)],
             [slot("ancientbeatmon", 13), slot("grandiskuwagamon", 14), slot("ancientwisemon", 15),
-             slot("murmukusmon", 16)],
+             slot("murmukusmon", 16, needs: "digicode")],
         ])
 
     public static let louwemonEX = EvolutionCard(
@@ -196,7 +211,7 @@ extension EvolutionCard {
             [slot("liollmon", 2), slot("gazimon", 3)],
             [slot("louwemon", 4), slot("liamon", 5), slot("duskmon", 6), slot("madleomon", 7)],
             [slot("raihimon", 8), slot("kaiserleomon", 9), slot("loaderleomon", 10),
-             slot("velgrmon", 11), slot("skullsatamon", 12), slot("lucemon_falldown", 13)],
+             slot("velgrmon", 11), slot("skullsatamon", 12), slot("lucemon_falldown", 13, needs: "digicode")],
             [slot("deathmon", 14), slot("dinotigermon", 15), slot("ancientsphinxmon", 16)],
         ])
 

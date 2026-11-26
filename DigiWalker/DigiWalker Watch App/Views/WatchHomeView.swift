@@ -12,6 +12,7 @@ struct WatchHomeView: View {
     /// True from closing an alert until the pause before the next one ends. Only the pause task presents then.
     @State private var closing = false
     @State private var showingLog = false
+    @State private var showingItems = false
 
     var body: some View {
         ScrollView {
@@ -20,6 +21,14 @@ struct WatchHomeView: View {
                     portrait(state.monster)
                     Text(state.monster.name).font(.headline)
                     PartnerGrowthView(monster: state.monster)
+                    if state.items.isEmpty {
+                        Text("\(ItemDrop.stepsPerSegment.formatted())걸음마다 아이템을 찾을 수 있어요")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    } else {
+                        Button("아이템 \(state.items.count)개") { showingItems = true }
+                            .font(.caption)
+                            .accessibilityIdentifier("itemsButton")
+                    }
                     let currentDay = state.observedAt.map { state.calendar.isDateInToday($0) } == true
                     Text("오늘 \((currentDay ? state.todaySteps : nil)?.formatted() ?? "—")걸음")
                         .font(.caption)
@@ -31,7 +40,7 @@ struct WatchHomeView: View {
                 if game.notificationsEnabled == false {
                     Text("알림이 꺼져 있어 앱을 열 때만 알려 드려요").font(.footnote).foregroundStyle(.secondary)
                 } else if game.notificationsEnabled == true {
-                    Text("앱을 닫아 두어도 부화·진화를 알려 드려요. 알림은 수십 분에서 1시간 정도 늦을 수 있어요.")
+                    Text("앱을 닫아 두어도 부화·진화·아이템을 알려 드려요. 알림은 수십 분에서 1시간 정도 늦을 수 있어요.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 if let message = game.message {
@@ -65,6 +74,9 @@ struct WatchHomeView: View {
         }
         .onAppear { game.loadWakeLog() }
         .sheet(isPresented: $showingLog) { BackgroundLogView(entries: game.wakeData.entries) }
+        .sheet(isPresented: $showingItems) {
+            if let state = game.state { WatchItemsView(summaries: state.itemSummaries) }
+        }
     }
 
     private func closeAlert() {

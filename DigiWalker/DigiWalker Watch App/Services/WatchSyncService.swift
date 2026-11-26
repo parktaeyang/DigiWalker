@@ -5,14 +5,16 @@ import WatchConnectivity
 enum SnapshotSendPolicy {
     static let contextKey = "monster_snapshot"
 
-    /// False only when the last submitted context decodes to a snapshot of the same partner and revision.
+    /// False only when the last submitted context decodes to a snapshot of the same partner, revision and an equal or newer schema.
     /// A missing or undecodable context means send.
     /// `force` is for recovery events (iPhone app reinstalled, reachable again) where the iPhone may have lost its cache.
     static func shouldSend(_ snapshot: MonsterSnapshot, lastSubmitted context: [String: Any], force: Bool = false) -> Bool {
         if force { return true }
         guard let data = context[contextKey] as? Data,
               let last = try? JSONDecoder().decode(MonsterSnapshot.self, from: data) else { return true }
-        return last.monster.id != snapshot.monster.id || last.revision != snapshot.revision
+        if last.monster.id != snapshot.monster.id { return true }
+        // Same partner and revision: only a newer schema (v2 -> v3 after a watch update) is worth sending again.
+        return last.revision != snapshot.revision || snapshot.schemaVersion > last.schemaVersion
     }
 }
 

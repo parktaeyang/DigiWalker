@@ -94,14 +94,34 @@ import Testing
                 for slot in slots { #expect(slot.randomEligible == !jogress.contains(slot.speciesId)) }
             }
         }
-        // Unlock-required species (e.g. Rapidmon Armor, Done Devimon) stay in the random pool.
-        for id in ["donedevimon", "rapidmon_armor", "sakuyamon_x", "lordknightmon", "dynasmon",
-                   "murmukusmon", "lucemon_falldown"] {
-            let slots = SpeciesCatalog.cards.compactMap { $0.slot(of: id) }
-            #expect(!slots.isEmpty && slots.allSatisfy(\.randomEligible), "\(id)")
-        }
     }
 
+    @Test func unlockRequiredSpeciesNeedTheirItemForRandomEvolution() throws {
+        let locked: [String: String] = [
+            "donedevimon": "digicore", "rapidmon_armor": "digimental_fate", "sakuyamon_x": "x_antibody",
+            "lordknightmon": "digicore", "dynasmon": "digicore", "murmukusmon": "digicode",
+            "lucemon_falldown": "digicode",
+        ]
+        var found = Set<String>()
+        for card in SpeciesCatalog.cards {
+            for (stage, slots) in card.stages.enumerated() {
+                for slot in slots {
+                    #expect(slot.requiredItemId == locked[slot.speciesId], "\(slot.speciesId)")
+                    guard let item = slot.requiredItemId else { continue }
+                    found.insert(slot.speciesId)
+                    #expect(ItemCatalog.info(id: item) != nil)
+                    #expect(!card.eligible(stage: stage, owning: []).map(\.speciesId).contains(slot.speciesId))
+                    #expect(card.eligible(stage: stage, owning: [item]).map(\.speciesId).contains(slot.speciesId))
+                    #expect(card.eligible(stage: stage, owning: ["crest_courage"]).map(\.speciesId)
+                        .contains(slot.speciesId) == false)
+                }
+                // The gate never empties a stage, with no items or with all of them.
+                #expect(!card.eligible(stage: stage, owning: []).isEmpty, "\(card.id) \(stage)")
+                #expect(card.eligible(stage: stage, owning: Set(ItemCatalog.ids)) == card.eligible(stage: stage))
+            }
+        }
+        #expect(found == Set(locked.keys))
+    }
     @Test func koreanNamesForNewCardsAreMarkedUnverified() throws {
         let old: Set<String> = Set(
             [EvolutionCard.agumonEX, .gabumonEX, .guilmonEX].flatMap { $0.stages.flatMap { $0.map(\.speciesId) } })

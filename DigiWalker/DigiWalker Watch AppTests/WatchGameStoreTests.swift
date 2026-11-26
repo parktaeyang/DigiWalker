@@ -7,6 +7,37 @@ private let t0 = Date(timeIntervalSince1970: 1_800_000_000)
 
 private struct TestFailure: Error {}
 
+/// A fresh egg with a given partner id. Item drops depend on the id, so tests must not use a random one;
+/// `GameState` has no public way to choose it, so the id is replaced through its stored form.
+private func egg(id: UUID) -> GameState {
+    do {
+        let state = GameState(now: t0, timeZone: .gmt)
+        var root = try JSONSerialization.jsonObject(with: JSONEncoder().encode(state)) as? [String: Any] ?? [:]
+        var monster = root["monster"] as? [String: Any] ?? [:]
+        monster["id"] = id.uuidString
+        root["monster"] = monster
+        return try JSONDecoder().decode(GameState.self, from: JSONSerialization.data(withJSONObject: root))
+    } catch {
+        fatalError("test egg could not be built: \(error)")
+    }
+}
+
+private func candidateId(_ n: UInt16) -> UUID {
+    UUID(uuid: (0xD2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, UInt8(n >> 8), UInt8(n & 0xFF)))
+}
+
+/// Partners whose first six 5,000-step segments find nothing, so settling up to 30,000 steps adds no item event.
+private let quietPartnerIds: [UUID] = {
+    let ids = (1...5_000 as ClosedRange<UInt16>).map(candidateId).filter { id in
+        (1...6).allSatisfy { ItemDrop.roll(monsterId: id, segment: $0, preferred: []) == nil }
+    }
+    precondition(ids.count >= 2, "no quiet partner ids found")
+    return Array(ids.prefix(2))
+}()
+
+/// A fresh egg that never finds an item in its first six segments.
+private func quietEgg(_ index: Int = 0) -> GameState { egg(id: quietPartnerIds[index]) }
+
 /// Deterministic SplitMix64, so evolution results do not vary between runs.
 private struct SeededGenerator: RandomNumberGenerator {
     private var state: UInt64
@@ -197,7 +228,7 @@ private struct Rig {
 
     init(state: GameState? = nil, active: Bool = true, enrolled: Bool = true, publisher: (any WidgetPublishing)? = nil,
          activity: (any AppActivityProviding)? = nil) {
-        var initial = GameState(now: t0, timeZone: .gmt)
+        var initial = quietEgg()
         if enrolled { initial.enroll(at: t0) }
         file = FakeFile(state ?? initial)
         store = WatchGameStore(health: health, file: file, sync: sync, announcer: announcer,
@@ -371,6 +402,58 @@ struct WatchGameStoreTests {
         #expect(GrowthNotifier.identifier(for: hatch) != GrowthNotifier.identifier(for: evolution))
     }
 
+    /// An enrolled egg with a fixed partner id whose segments 1...`hits` all drop an item (drops depend on the id).
+    private func eggWithDrops(segments: Int) throws -> GameState {
+        for n in 1...5_000 as ClosedRange<UInt16> {
+            let id = candidateId(n)
+            guard (1...segments).allSatisfy({ ItemDrop.roll(monsterId: id, segment: $0, preferred: []) != nil }) else { continue }
+            var state = egg(id: id)
+            state.enroll(at: t0)
+            return state
+        }
+        throw TestFailure()
+    }
+
+    @Test func itemEventsAreQueuedBeforeTheHatchAndOnlyOnceVibrate() async throws {
+        let rig = Rig(state: try eggWithDrops(segments: 2), active: true)
+        rig.health.steps = 10_000 // two segments, and the egg hatches and evolves in the same settlement
+        await rig.store.refresh()
+        #expect(rig.store.alerts.map(\.kind) == [.itemFound, .itemFound, .hatched])
+        #expect(rig.store.alerts.compactMap(\.segment) == [1, 2])
+        #expect(rig.store.state?.items.count == 2)
+        #expect(rig.announcer.haptics == [rig.store.alerts[0]]) // one haptic for the whole settlement
+        #expect(rig.pending.stored == rig.store.alerts)
+        #expect(rig.pending.saves == 1) // the whole settlement is written at once, not event by event
+        await rig.store.refresh() // same reading again: nothing new
+        #expect(rig.store.alerts.count == 3 && rig.announcer.haptics.count == 1)
+    }
+
+    @Test func backgroundItemNotificationsUseTheirOwnIdentifiers() async throws {
+        let rig = Rig(state: try eggWithDrops(segments: 1), active: false)
+        rig.health.steps = 5_000
+        await rig.store.refresh()
+        #expect(rig.announcer.notified.map(\.kind) == [.itemFound, .hatched]) // item first, then the hatch
+        let ids = rig.announcer.notified.map(GrowthNotifier.identifier(for:))
+        #expect(ids[0].hasPrefix("item-") && ids[1].hasPrefix("growth-"))
+        #expect(ids[0] == "item-\(rig.announcer.notified[0].monsterId.uuidString)-1")
+        #expect(Set(ids).count == 2)
+        #expect(rig.store.alerts.isEmpty && rig.pending.stored.isEmpty)
+    }
+
+    @Test func failedSaveMakesNoItemEvents() async throws {
+        let rig = Rig(state: try eggWithDrops(segments: 1), active: true)
+        rig.health.steps = 5_000
+        rig.file.failSave = true
+        await rig.store.refresh()
+        #expect(rig.store.state?.items.isEmpty == true)
+        #expect(rig.store.alerts.isEmpty && rig.announcer.haptics.isEmpty && rig.pending.stored.isEmpty)
+        // The retry after the save works makes the same item.
+        rig.file.failSave = false
+        await rig.store.refresh()
+        #expect(rig.store.alerts.first?.kind == .itemFound)
+        #expect(rig.store.state?.items.first?.segment == 1)
+    }
+
     @Test func refreshIsScheduledAfterSettlementsButNotBeforeEnrollment() async {
         let notEnrolled = Rig(enrolled: false)
         await notEnrolled.store.refresh()
@@ -396,7 +479,10 @@ struct WatchGameStoreTests {
         await donor.store.refresh()
         let old = try #require(donor.pending.stored.first)
 
-        let rig = Rig(active: false)
+        // Another partner than the donor, whose events would otherwise be the very same event.
+        var other = quietEgg(1)
+        other.enroll(at: t0)
+        let rig = Rig(state: other, active: false)
         rig.pending.stored = [old]
         rig.pending.failLoad = true
         rig.announcer.failNotify = true
@@ -489,7 +575,9 @@ struct WatchGameStoreTests {
         await donor.store.refresh()
         let old = try #require(donor.pending.stored.first)
 
-        let rig = Rig(active: true)
+        var other = quietEgg(1)
+        other.enroll(at: t0)
+        let rig = Rig(state: other, active: true)
         rig.pending.stored = [old]
         rig.pending.failLoad = true
         await rig.store.refresh() // hatch queued in memory only
@@ -828,7 +916,7 @@ struct WatchGameStoreTests {
 
 @MainActor
 struct SnapshotSendPolicyTests {
-    private let base = GameState(now: t0, timeZone: .gmt).snapshot
+    private let base = quietEgg().snapshot
 
     private func snapshot(revision: Int, of origin: MonsterSnapshot? = nil) -> MonsterSnapshot {
         let source = origin ?? base
@@ -854,8 +942,18 @@ struct SnapshotSendPolicyTests {
         #expect(SnapshotSendPolicy.shouldSend(snapshot(revision: 5), lastSubmitted: context(snapshot(revision: 4))))
     }
 
+    @Test func schemaUpgradeAtTheSameRevisionIsSentButNotADowngrade() {
+        let v2 = MonsterSnapshot(schemaVersion: 2, revision: 4, createdAt: base.createdAt, monster: base.monster,
+                                 todaySteps: nil, observedAt: nil, timeZone: nil, dex: base.dex)
+        let v3 = MonsterSnapshot(schemaVersion: 3, revision: 4, createdAt: base.createdAt, monster: base.monster,
+                                 todaySteps: nil, observedAt: nil, timeZone: nil, dex: base.dex, items: [])
+        #expect(SnapshotSendPolicy.shouldSend(v3, lastSubmitted: context(v2)))
+        #expect(!SnapshotSendPolicy.shouldSend(v2, lastSubmitted: context(v3)))
+        #expect(!SnapshotSendPolicy.shouldSend(v3, lastSubmitted: context(v3)))
+    }
+
     @Test func differentPartnerIsSentEvenWithSameRevision() {
-        let other = snapshot(revision: 4, of: GameState(now: t0, timeZone: .gmt).snapshot)
+        let other = snapshot(revision: 4, of: egg(id: candidateId(60_000)).snapshot)
         #expect(SnapshotSendPolicy.shouldSend(other, lastSubmitted: context(snapshot(revision: 4))))
     }
 
@@ -946,7 +1044,7 @@ struct WidgetPublisherTests {
     }
 
     private func state(steps: Int) -> GameState {
-        var state = GameState(now: t0, timeZone: .gmt)
+        var state = quietEgg()
         state.enroll(at: t0)
         var generator = SeededGenerator(seed: 7)
         state.settle(day: t0, steps: steps, distance: nil, at: nil, using: &generator)

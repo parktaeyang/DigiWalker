@@ -12,6 +12,10 @@ struct DexModel {
         var jogressOnly: Bool = false
         /// Used when the species is not in the catalog (e.g. the old starter in a v1 cache).
         var fallbackName: String? = nil
+        /// Item needed before random evolution may pick this species (the original unlock-required species).
+        var requiredItem: ItemInfo? = nil
+        /// Whether that item is owned; nil when the snapshot predates items.
+        var requiredItemOwned: Bool? = nil
         var id: String { speciesId }
         /// Undiscovered rows never expose the real name.
         var displayName: String {
@@ -60,14 +64,16 @@ struct DexModel {
             return
         }
 
-        func row(_ id: String, stage: Int?) -> Row {
-            Row(speciesId: id, stage: stage, entry: entries[id], discovered: known.contains(id),
-                jogressOnly: Self.isJogressOnly(id))
+        func row(_ id: String, stage: Int?, requiredItemId: String? = nil) -> Row {
+            let item = requiredItemId.flatMap(ItemCatalog.info(id:))
+            return Row(speciesId: id, stage: stage, entry: entries[id], discovered: known.contains(id),
+                       jogressOnly: Self.isJogressOnly(id), requiredItem: item,
+                       requiredItemOwned: item.flatMap { ItemModel.owns($0.id, in: snapshot) })
         }
         var sections = [Section(title: "공통", rows: [row(SpeciesCatalog.eggId, stage: nil)])]
         // Shared species are listed in every card that has them; counts above are per species, so they count once.
         for card in SpeciesCatalog.cards {
-            let rows = card.stages.enumerated().flatMap { stage, slots in slots.map { row($0.speciesId, stage: stage) } }
+            let rows = card.stages.enumerated().flatMap { stage, slots in slots.map { row($0.speciesId, stage: stage, requiredItemId: $0.requiredItemId) } }
             sections.append(Section(title: Self.cardTitles[card.id] ?? card.displayName, rows: rows))
         }
         // Poyomon and any species outside the catalog (unknown legacy species) go under "이전 파트너".
@@ -113,6 +119,14 @@ private struct DexRowView: View {
         return row.speciesId == SpeciesCatalog.eggId ? "알" : "이전 파트너"
     }
 
+    private var ownedText: String {
+        switch row.requiredItemOwned {
+        case true?: " · 보유"
+        case false?: " · 미보유"
+        case nil: ""
+        }
+    }
+
     private func metText(_ entry: DexEntry) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -139,6 +153,10 @@ private struct DexRowView: View {
                 }
                 if row.jogressOnly, !row.discovered {
                     Text("특별한 조건이 필요해요").font(.caption2).foregroundStyle(.secondary)
+                }
+                if let item = row.requiredItem {
+                    Text("필요: \(item.name)\(ownedText)").font(.caption2)
+                        .foregroundStyle(row.requiredItemOwned == true ? Color.green : Color.secondary)
                 }
             }
         }

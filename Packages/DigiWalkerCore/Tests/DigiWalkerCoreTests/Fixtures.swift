@@ -61,3 +61,28 @@ struct CountingGenerator: RandomNumberGenerator {
         return base.next()
     }
 }
+
+/// A reproducible partner id: item drops depend on it, so tests must not use a random one.
+func testPartnerId(_ n: UInt64) -> UUID {
+    var bytes = [UInt8](repeating: 0, count: 16)
+    for i in 0..<8 { bytes[15 - i] = UInt8(truncatingIfNeeded: n >> (8 * UInt64(i))) }
+    bytes[0] = 0xD1
+    return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                       bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+}
+
+extension GameState {
+    /// An enrolled egg with a fixed partner id.
+    static func enrolledEgg(id: UUID = testPartnerId(1), at start: Date, timeZone: TimeZone = .gmt) -> GameState {
+        var state = GameState(speciesId: Monster.eggSpeciesId, name: "디지타마", now: start, timeZone: timeZone, monsterId: id)
+        state.enroll(at: start)
+        return state
+    }
+}
+
+extension GameState {
+    /// A not-yet-enrolled egg with a fixed partner id (item drops depend on the id, so it must not be random).
+    static func fixedEgg(now: Date, timeZone: TimeZone = .gmt, id: UUID = testPartnerId(1)) -> GameState {
+        GameState(speciesId: Monster.eggSpeciesId, name: "디지타마", now: now, timeZone: timeZone, monsterId: id)
+    }
+}

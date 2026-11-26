@@ -23,6 +23,10 @@ struct ContentView: View {
                         NavigationLink("도감 · \(dex.discoveredCount) / \(dex.totalCount)") {
                             DexView(snapshot: snapshot)
                         }
+                        let items = ItemModel(snapshot: snapshot)
+                        NavigationLink(items.synced ? "아이템 · 보유 종류 \(items.ownedKinds) / \(items.totalKinds)" : "아이템") {
+                            ItemView(snapshot: snapshot)
+                        }
                     }
                     Section("워치 활동 기록") {
                         if let date = snapshot.observedAt {

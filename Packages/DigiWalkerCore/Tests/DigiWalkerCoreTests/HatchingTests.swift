@@ -6,7 +6,7 @@ import Testing
     private let start = Date(timeIntervalSince1970: 1_800_000_000)
 
     @Test func hatchesExactlyAt500AcrossDaysAndSurvivesReplay() throws {
-        var state = GameState(now: start, timeZone: .gmt)
+        var state = GameState.fixedEgg(now: start)
         let eggID = state.monster.id
         state.enroll(at: start)
         state.recordObservation(steps: 9000, at: start)
@@ -40,7 +40,7 @@ import Testing
     }
 
     @Test func firstLargeReadingHatchesImmediately() throws {
-        var state = GameState(now: start, timeZone: .gmt)
+        var state = GameState.fixedEgg(now: start)
         state.enroll(at: start)
         state.settle(day: start, steps: 4_030, distance: nil)
         #expect(state.monster.stage == 0) // 4,030 steps: stage 0 (500...4,999)

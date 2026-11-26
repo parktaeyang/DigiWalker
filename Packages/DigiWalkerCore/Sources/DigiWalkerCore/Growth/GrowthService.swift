@@ -17,6 +17,8 @@ public enum GrowthService {
         let previous = saved.lastStepDay.flatMap { calendar.date(byAdding: .day, value: -1, to: $0) }
         var day = max(firstDay, previous ?? firstDay)
         var candidate = saved
+        // Item preference uses only the card fixed before this reconcile began (same for every day and every retry).
+        let committedCardId = saved.monster.cardId
         // `random` is copied here, so a seeded generator passed by the caller is not advanced.
         var generator: any RandomNumberGenerator = random ?? SystemRandomNumberGenerator()
         var todayCount: Int?
@@ -29,7 +31,7 @@ public enum GrowthService {
             let end = min(next, now)
             let steps = try await read(.steps, start, end).map(Int.init)
             let meters = try await read(.distanceMeters, start, end)
-            candidate.settle(day: day, steps: steps, distance: meters, at: now, using: &generator)
+            candidate.settle(day: day, steps: steps, distance: meters, at: now, committedCardId: committedCardId, using: &generator)
             if day == today {
                 if start == today {
                     todayCount = steps

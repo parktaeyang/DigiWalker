@@ -7,9 +7,7 @@ import Testing
     private var day2: Date { start.addingTimeInterval(86400) }
 
     private func enrolled() -> GameState {
-        var state = GameState(now: start, timeZone: .gmt)
-        state.enroll(at: start)
-        return state
+        GameState.enrolledEgg(at: start)
     }
 
     private func settled(steps: Int, seed: UInt64) -> GameState {
@@ -51,11 +49,21 @@ import Testing
         }
     }
 
-    @Test func everyCardAndEligibleSpeciesIsReachable() {
+    @Test func everyCardAndEligibleSpeciesIsReachable() throws {
         var cards = Set<String>()
         var reached = Set<String>()
+        // Locked species need their item, so the partner starts out owning every unlock item (an earlier partner's
+        // grants); the rest of the run is then fully decided by the seed.
+        let owner = testPartnerId(900)
+        var root = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(enrolled())) as? [String: Any])
+        root["items"] = ["digicore", "digimental_fate", "x_antibody", "digicode"].enumerated().map {
+            ["itemId": $0.element, "monsterId": owner.uuidString, "segment": $0.offset + 1, "grantedAt": 1.0]
+        }
+        let holder = try JSONDecoder().decode(GameState.self, from: JSONSerialization.data(withJSONObject: root))
         for seed in 0..<3000 as Range<UInt64> {
-            let state = settled(steps: EvolutionCard.requiredSteps(stage: 5), seed: seed)
+            var state = holder
+            var generator = SeededGenerator(seed: seed)
+            state.settle(day: start, steps: EvolutionCard.requiredSteps(stage: 5), distance: nil, at: start, using: &generator)
             cards.insert(state.monster.cardId ?? "")
             reached.formUnion(state.dex.map(\.speciesId))
         }
