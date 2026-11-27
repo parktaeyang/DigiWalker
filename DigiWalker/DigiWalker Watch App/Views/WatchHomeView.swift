@@ -130,7 +130,7 @@ struct WatchHomeView: View {
         // starter_acorn still goes through MonsterAssets (private pack) first.
         if monster.speciesId != "starter_acorn", DIMSpriteStore.shared.idleFrames(for: monster.speciesId) != nil
             || PartnerPortrait.bundledSpeciesIds.contains(monster.speciesId) {
-            PartnerPortrait(speciesId: monster.speciesId, slot: 64, animated: true)
+            PartnerPortrait(speciesId: monster.speciesId, slot: 96, animated: true, devicePixelScaling: true)
         } else if case .success(let assets) = MonsterAssets.shared.result,
            let partner = assets.library.species(id: monster.speciesId) {
             #if DEBUG
@@ -149,14 +149,14 @@ struct WatchHomeView: View {
             sprite(partner, source: assets.source)
             #endif
         } else {
-            PartnerPortrait(speciesId: monster.speciesId, slot: 64, animated: true)
+            PartnerPortrait(speciesId: monster.speciesId, slot: 96, animated: true, devicePixelScaling: true)
         }
     }
 
     @ViewBuilder
     private func sprite(_ species: DecodedSpecies, source: MonsterAssets.Source) -> some View {
         if source == .starterPack && species.speciesId == "starter_acorn" {
-            PartnerPortrait(speciesId: species.speciesId, slot: 64, animated: true)
+            PartnerPortrait(speciesId: species.speciesId, slot: 96, animated: true, devicePixelScaling: true)
         } else {
             SpriteView(species: species, pixelSize: 2)
         }

@@ -11,6 +11,10 @@ struct PartnerPortrait: View {
     var animated = false
     /// Undiscovered dex entries: always the placeholder, never the real sprite or name.
     var concealed = false
+    /// Scale by whole device pixels instead of whole points (e.g. 3 device px per sprite px = 1.5pt at 2x),
+    /// so the sprite can fill more of the slot while staying nearest-neighbor sharp.
+    var devicePixelScaling = false
+    @Environment(\.displayScale) private var displayScale
     @Environment(\.scenePhase) private var phase
     @Environment(\.isLuminanceReduced) private var dimmed
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -26,6 +30,16 @@ struct PartnerPortrait: View {
         max(1, Int((slot / CGFloat(max(1, pixelSize))).rounded(.down)))
     }
 
+    /// Points per sprite pixel: a whole number of points, or of device pixels with `devicePixelScaling`.
+    static func pointsPerPixel(slot: CGFloat, pixelSize: Int, displayScale: CGFloat, devicePixels: Bool) -> CGFloat {
+        guard devicePixels, displayScale >= 1 else { return CGFloat(scale(slot: slot, pixelSize: pixelSize)) }
+        return CGFloat(scale(slot: slot * displayScale, pixelSize: pixelSize)) / displayScale
+    }
+
+    private func unit(_ pixelSize: Int) -> CGFloat {
+        Self.pointsPerPixel(slot: slot, pixelSize: pixelSize, displayScale: displayScale, devicePixels: devicePixelScaling)
+    }
+
     var body: some View {
         Group {
             // 1. DIM sheet in PrivateAssets, 2. repository PNG, 3. placeholder.
@@ -33,15 +47,15 @@ struct PartnerPortrait: View {
                 placeholder(label: "미발견")
             } else if let dim = DIMSpriteStore.shared.idleFrames(for: speciesId) {
                 animatedImage(count: dim.idle.count) { index in
-                    let k = Self.scale(slot: slot, pixelSize: max(dim.spec.frameWidth, dim.spec.frameHeight))
+                    let k = unit(max(dim.spec.frameWidth, dim.spec.frameHeight))
                     Image(decorative: dim.idle[index], scale: 1)
                         .interpolation(.none)
                         .resizable()
-                        .frame(width: CGFloat(dim.spec.frameWidth * k), height: CGFloat(dim.spec.frameHeight * k))
+                        .frame(width: CGFloat(dim.spec.frameWidth) * k, height: CGFloat(dim.spec.frameHeight) * k)
                 }
             } else if Self.bundledSpeciesIds.contains(speciesId) {
                 animatedImage(count: frames.count) { index in
-                    let side = CGFloat(32 * Self.scale(slot: slot, pixelSize: 32))
+                    let side = 32 * unit(32)
                     Image(frames[index])
                         .interpolation(.none)
                         .resizable()
