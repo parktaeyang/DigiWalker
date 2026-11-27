@@ -7,10 +7,8 @@ struct WatchHomeView: View {
     @State private var previewIndex = 0
     #endif
     @Environment(\.scenePhase) private var phase
-    /// The event the alert is showing. Tracked here so the next queued event gets a fresh presentation.
-    @State private var presented: GrowthEvent?
-    /// True from closing an alert until the pause before the next one ends. Only the pause task presents then.
-    @State private var closing = false
+    /// Keeps the alert and the new-egg dialog from overlapping.
+    @State private var flow = AlertFlow()
     @State private var showingLog = false
     @State private var showingItems = false
 
@@ -21,11 +19,18 @@ struct WatchHomeView: View {
                     portrait(state.monster)
                     Text(state.monster.name).font(.headline)
                     PartnerGrowthView(monster: state.monster)
-                    if state.items.isEmpty {
+                    if state.monster.canStartNewEgg {
+                        Button("새 알 키우기") { game.requestNewEggConfirmation() }
+                            .font(.caption)
+                            .accessibilityIdentifier("newEggButton")
+                    }
+                    // What is held now (grants minus uses), not how many were ever found.
+                    let held = state.itemSummaries.reduce(0) { $0 + $1.count }
+                    if held == 0 {
                         Text("\(ItemDrop.stepsPerSegment.formatted())걸음마다 아이템을 찾을 수 있어요")
                             .font(.caption2).foregroundStyle(.secondary)
                     } else {
-                        Button("아이템 \(state.items.count)개") { showingItems = true }
+                        Button("아이템 \(held)개") { showingItems = true }
                             .font(.caption)
                             .accessibilityIdentifier("itemsButton")
                     }
@@ -40,7 +45,7 @@ struct WatchHomeView: View {
                 if game.notificationsEnabled == false {
                     Text("알림이 꺼져 있어 앱을 열 때만 알려 드려요").font(.footnote).foregroundStyle(.secondary)
                 } else if game.notificationsEnabled == true {
-                    Text("앱을 닫아 두어도 부화·진화·아이템을 알려 드려요. 알림은 수십 분에서 1시간 정도 늦을 수 있어요.")
+                    Text("앱을 닫아 두어도 부화·진화·아이템·새 알을 알려 드려요. 알림은 수십 분에서 1시간 정도 늦을 수 있어요.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 if let message = game.message {
@@ -57,20 +62,51 @@ struct WatchHomeView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .alert(presented?.title ?? "", isPresented: Binding(
-            get: { presented != nil },
+        .alert(flow.presented?.title ?? "", isPresented: Binding(
+            get: { flow.presented != nil },
             set: { if !$0 { closeAlert() } }
         )) {
-            Button("확인", role: .cancel) { }
+            if let offer = flow.presented, offer.kind == .newEggReady {
+                // Closing the alert any other way keeps the finished partner.
+                // The dialog opens once the alert is gone (see the dialog binding), in place of the next alert.
+                Button("새 알 키우기") { game.requestNewEggConfirmation(for: offer.monsterId) }
+                Button("궁극체 유지", role: .cancel) { }
+            } else {
+                Button("확인", role: .cancel) { }
+            }
         } message: {
-            Text(presented?.body ?? "")
+            Text(flow.presented?.body ?? "")
         }
         // First presentation only; the next queued event is presented by closeAlert after its pause.
         .onChange(of: game.presentableAlerts, initial: true) { _, _ in
-            if presented == nil, !closing { presented = game.pendingAlert }
+            flow.present(game.pendingAlert, dialogWanted: game.confirmingNewEgg)
+        }
+        // A finished partner's offer disappears when its egg was started (e.g. a request from the iPhone).
+        .onChange(of: game.alerts) { _, queue in
+            flow.dropOfferIfGone(from: queue)
+        }
+        // After the dialog goes away the queued alerts continue.
+        .onChange(of: game.confirmingNewEgg) { _, wanted in
+            flow.present(game.pendingAlert, dialogWanted: wanted)
         }
         .task(id: phase) {
             if phase == .active { await game.refresh() }
+        }
+        .confirmationDialog("정말 새 알을 키울까요?", isPresented: Binding(
+            get: { game.confirmingNewEgg && flow.dialogMayShow },
+            set: { if !$0 { game.cancelNewEggConfirmation() } }
+        ), titleVisibility: .visible) {
+            if let monster = game.state?.monster, game.confirmingNewEgg {
+                Button("새 알 키우기", role: .destructive) {
+                    let target = monster.id
+                    Task { await game.startNewEgg(target: target) }
+                }
+            }
+            Button("취소", role: .cancel) { }
+        } message: {
+            if let name = game.state?.monster.name {
+                Text("\(name)\(KoreanParticle.topic(name)) 도감에 남습니다")
+            }
         }
         .onAppear { game.loadWakeLog() }
         .sheet(isPresented: $showingLog) { BackgroundLogView(entries: game.wakeData.entries) }
@@ -80,15 +116,12 @@ struct WatchHomeView: View {
     }
 
     private func closeAlert() {
-        guard let shown = presented else { return }
-        closing = true
-        presented = nil
+        guard let shown = flow.close() else { return }
         game.dismissAlert(id: shown.id)
-        // Present the next queued event after this alert has fully gone away.
+        // The next step (a wanted dialog, else the next queued event) waits until this alert has fully gone away.
         Task {
-            try? await Task.sleep(for: .milliseconds(400))
-            closing = false
-            if presented == nil { presented = game.pendingAlert }
+            try? await Task.sleep(for: .milliseconds(450))
+            flow.pauseEnded(next: game.pendingAlert, dialogWanted: game.confirmingNewEgg)
         }
     }
 

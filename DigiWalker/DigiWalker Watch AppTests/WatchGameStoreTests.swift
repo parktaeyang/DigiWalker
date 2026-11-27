@@ -1,6 +1,8 @@
 import DigiWalkerCore
 import Foundation
 import Testing
+import UserNotifications
+import WatchConnectivity
 @testable import DigiWalker_Watch_App
 
 private let t0 = Date(timeIntervalSince1970: 1_800_000_000)
@@ -133,7 +135,10 @@ private final class FakePending: PendingEventStoring {
 
 private final class FakeSync: SnapshotPublishing {
     var published = 0
-    func publish(_ snapshot: MonsterSnapshot) { published += 1 }
+    var republished = 0
+    var last: MonsterSnapshot?
+    func publish(_ snapshot: MonsterSnapshot) { published += 1; last = snapshot }
+    func republish(_ snapshot: MonsterSnapshot) { republished += 1; last = snapshot }
 }
 
 private final class FakeWidget: WidgetPublishing {
@@ -171,6 +176,8 @@ private final class FakeAnnouncer: GrowthAnnouncing {
     }
     var permissionGranted = true
     func requestPermission() async -> Bool { permissionGranted }
+    var withdrawn: [String] = []
+    func withdraw(identifiers: [String]) { withdrawn += identifiers }
 }
 
 private final class FakeScheduler: RefreshScheduling {
@@ -602,7 +609,10 @@ struct WatchGameStoreTests {
     }
 
     @Test func mergeAfterUnreadablePendingFileIsSaved() async throws {
-        let donor = Rig(active: false)
+        // A different partner ID, so the two hatch events (random species) can never be equal and merge into one.
+        var other = quietEgg(1)
+        other.enroll(at: t0)
+        let donor = Rig(state: other, active: false)
         donor.announcer.failNotify = true
         await donor.store.refresh()
         let old = try #require(donor.pending.stored.first)
@@ -1231,5 +1241,385 @@ struct BackgroundLogTests {
         await store.refresh(wake: .refresh)
         // The test host app may or may not be active; either way nothing reaches a real file.
         #expect(store.wakeData.entries.count <= 1)
+    }
+}
+
+/// A quiet egg that was settled to `steps` credited steps (a finished partner from 75,000).
+private func finishedPartner(steps: Int) -> GameState {
+    var state = quietEgg()
+    state.enroll(at: t0)
+    var generator = SeededGenerator(seed: 11)
+    state.settle(day: t0, steps: steps, distance: nil, at: nil, using: &generator)
+    return state
+}
+
+@MainActor
+@Suite(.timeLimit(.minutes(1)))
+struct NewEggStoreTests {
+    @Test func crossingTheThresholdQueuesOneOffer() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg - 1), active: true)
+        rig.health.steps = Monster.stepsForNewEgg
+        await rig.store.refresh()
+        let offers = rig.store.alerts.filter { $0.kind == .newEggReady }
+        #expect(offers.count == 1)
+        #expect(rig.pending.stored.filter { $0.kind == .newEggReady } == offers)
+        #expect(rig.store.state?.monster.canStartNewEgg == true)
+        await rig.store.refresh() // the same reading again
+        await rig.store.refresh()
+        #expect(rig.store.alerts.filter { $0.kind == .newEggReady }.count == 1)
+        #expect(rig.announcer.haptics.filter { $0.kind == .newEggReady }.count <= 1)
+    }
+
+    @Test func aPartnerAlreadyPastTheThresholdOnLoadGetsNoOffer() async {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg + 500), active: true)
+        rig.health.passThrough = true
+        await rig.store.refresh()
+        #expect(rig.store.alerts.contains { $0.kind == .newEggReady } == false)
+        rig.health.passThrough = false
+        rig.health.steps = Monster.stepsForNewEgg + 800 // more steps, still past it: no crossing
+        await rig.store.refresh()
+        #expect(rig.store.alerts.contains { $0.kind == .newEggReady } == false)
+        #expect(rig.store.state?.monster.canStartNewEgg == true) // only the button is shown
+    }
+
+    @Test func backgroundOfferUsesItsOwnIdentifier() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg - 1), active: false)
+        rig.health.steps = Monster.stepsForNewEgg
+        await rig.store.refresh()
+        let offer = try #require(rig.announcer.notified.first { $0.kind == .newEggReady })
+        #expect(GrowthNotifier.identifier(for: offer) == "newegg-\(offer.monsterId.uuidString)")
+        #expect(GrowthNotifier.identifier(for: offer) != "growth-\(offer.monsterId.uuidString)-\(offer.toSpeciesId)")
+        #expect(rig.store.alerts.isEmpty && rig.pending.stored.isEmpty) // delivered offers leave the queue
+    }
+
+    @Test func notificationActionsMapToTheConfirmationOnly() {
+        let id = candidateId(77)
+        let info: [AnyHashable: Any] = [GrowthNotifier.monsterIdKey: id.uuidString]
+        func target(_ action: String, category: String = GrowthNotifier.newEggCategory,
+                    info: [AnyHashable: Any] = info) -> UUID? {
+            GrowthNotifier.newEggTarget(category: category, action: action, userInfo: info)
+        }
+        #expect(target(GrowthNotifier.newEggStartAction) == id)
+        #expect(target(UNNotificationDefaultActionIdentifier) == id)
+        #expect(target(GrowthNotifier.newEggKeepAction) == nil)
+        #expect(target(UNNotificationDismissActionIdentifier) == nil)
+        #expect(target(GrowthNotifier.newEggStartAction, category: "OTHER") == nil)
+        #expect(target(GrowthNotifier.newEggStartAction, info: [GrowthNotifier.monsterIdKey: "nope"]) == nil)
+        #expect(target(GrowthNotifier.newEggStartAction, info: [:]) == nil)
+    }
+
+    @Test func confirmationShowsOnlyForTheCurrentFinishedPartner() async {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        rig.health.passThrough = true
+        await rig.store.refresh()
+        #expect(rig.store.confirmingNewEgg == false)
+        rig.store.requestNewEggConfirmation(for: candidateId(1)) // some other partner
+        #expect(rig.store.confirmingNewEgg == false)
+        rig.store.requestNewEggConfirmation()
+        #expect(rig.store.confirmingNewEgg)
+        rig.store.cancelNewEggConfirmation()
+        #expect(rig.store.confirmingNewEgg == false)
+        #expect(rig.store.state?.generation == 0) // asking never starts one
+    }
+
+    @Test func startCommitsThenPublishesAndRefreshesTheWidget() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        let old = try #require(rig.file.stored).monster.id
+        rig.store.requestNewEggConfirmation(for: old)
+        let published = rig.sync.published
+        let applied = await rig.store.startNewEgg(target: old)
+        #expect(applied)
+        let state = try #require(rig.store.state)
+        #expect(state.monster.id != old && state.monster.isEgg && state.generation == 1)
+        #expect(rig.file.stored == state)
+        #expect(rig.sync.published > published)
+        #expect(rig.sync.last == state.snapshot)
+        #expect(rig.widget.published.last?.snapshot.monsterId == state.monster.id)
+        #expect(rig.store.newEggConfirmation == nil)
+    }
+
+    @Test func aFailedSaveChangesNothing() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        rig.health.passThrough = true
+        await rig.store.refresh()
+        let state = rig.store.state
+        let stored = rig.file.stored
+        let queue = rig.store.alerts
+        let pending = rig.pending.stored
+        rig.file.failSave = true
+        let applied = await rig.store.startNewEgg(target: try #require(state).monster.id)
+        #expect(!applied)
+        #expect(rig.store.state == state)
+        #expect(rig.file.stored == stored)
+        #expect(rig.store.alerts == queue && rig.pending.stored == pending)
+        #expect(rig.announcer.withdrawn.isEmpty)
+        #expect(rig.store.message != nil)
+    }
+
+    @Test func theSameTargetTwiceIsIgnoredAndRepublishes() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        let old = try #require(rig.file.stored).monster.id
+        let first = await rig.store.startNewEgg(target: old)
+        #expect(first)
+        let after = rig.store.state
+        let saves = rig.file.saves
+        let second = await rig.store.startNewEgg(target: old)
+        #expect(!second)
+        #expect(rig.store.state == after && rig.file.saves == saves)
+        #expect(rig.sync.republished == 1)
+        #expect(rig.sync.last == after?.snapshot)
+    }
+
+    @Test func aRequestDuringASettlementRunsAfterIt() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg - 1), active: true)
+        let old = try #require(rig.file.stored).monster.id
+        rig.health.steps = Monster.stepsForNewEgg
+        rig.health.holdReads = true
+        let settling = Task { await rig.store.refresh() }
+        await rig.health.waitForReadToStart()
+        let request = Task { await rig.store.startNewEgg(target: old) }
+        for _ in 0..<50 { await Task.yield() }
+        // Parked settlement: the request has not changed anything yet.
+        #expect(rig.store.state?.monster.id == old)
+        rig.health.releaseReads()
+        await settling.value
+        let applied = await request.value
+        #expect(applied) // the settlement made the partner finished first
+        #expect(rig.store.state?.generation == 1)
+        #expect(rig.health.maxRunning == 1)
+    }
+
+    @Test func onlyTheFinishedPartnersOfferLeavesTheQueue() async throws {
+        let rig = Rig(active: true) // a fresh egg: one big reading hatches it, evolves it and crosses 85,000
+        rig.health.steps = Monster.stepsForNewEgg
+        await rig.store.refresh()
+        let before = rig.store.alerts
+        let old = try #require(rig.store.state).monster.id
+        #expect(before.contains { $0.kind == .newEggReady } && before.contains { $0.kind == .hatched })
+        let applied = await rig.store.startNewEgg(target: old)
+        #expect(applied)
+        #expect(rig.store.alerts == before.filter { $0.kind != .newEggReady })
+        #expect(rig.pending.stored == rig.store.alerts)
+        #expect(rig.announcer.withdrawn == ["newegg-\(old.uuidString)"])
+    }
+
+    @Test func aWrongTargetChangesNothing() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        let before = rig.file.stored
+        let applied = await rig.store.startNewEgg(target: candidateId(4_000))
+        #expect(!applied)
+        #expect(rig.file.stored == before && rig.file.saves == 0)
+        #expect(rig.sync.republished == 1)
+    }
+}
+
+@MainActor
+@Suite(.timeLimit(.minutes(1)))
+struct NewEggRequestReceivingTests {
+    private func userInfo(_ request: NewEggRequest) throws -> [String: Any] {
+        [NewEggRequest.userInfoKey: try JSONEncoder().encode(request)]
+    }
+
+    @Test func payloadDecodesOnlyAWellFormedRequest() throws {
+        let request = NewEggRequest(targetMonsterId: candidateId(5), requestedAt: t0)
+        #expect(NewEggRequestPayload.decode(try userInfo(request)) == request)
+        #expect(NewEggRequestPayload.decode([:]) == nil)
+        #expect(NewEggRequestPayload.decode(["other": try JSONEncoder().encode(request)]) == nil)
+        #expect(NewEggRequestPayload.decode([NewEggRequest.userInfoKey: Data("{".utf8)]) == nil)
+        #expect(NewEggRequestPayload.decode([NewEggRequest.userInfoKey: "text"]) == nil)
+    }
+
+    @Test func requestsBeforeTheHandlerWaitAndThenRun() async throws {
+        let service = WatchSyncService()
+        let request = NewEggRequest(targetMonsterId: candidateId(6), requestedAt: t0)
+        service.session(WCSession.default, didReceiveUserInfo: try userInfo(request))
+        await waitUntil { service.inFlight.count == 1 }
+        for _ in 0..<20 { await Task.yield() }
+        #expect(service.inFlight.count == 1) // received, not handled: a background task must keep waiting
+        var seen: [NewEggRequest] = []
+        service.onNewEggRequest = { seen.append($0) }
+        await waitUntil { service.inFlight.count == 0 }
+        #expect(seen == [request])
+    }
+
+    @Test func aMatchingRequestStartsOneNewEggAndAnOldOneIsIgnored() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        let old = try #require(rig.file.stored).monster.id
+        let service = WatchSyncService()
+        service.onNewEggRequest = { request in await rig.store.startNewEgg(target: request.targetMonsterId) }
+        let request = NewEggRequest(targetMonsterId: old, requestedAt: t0)
+        service.session(WCSession.default, didReceiveUserInfo: try userInfo(request))
+        await waitUntil { rig.store.state?.generation == 1 && service.inFlight.count == 0 }
+        let after = rig.store.state
+        #expect(after?.generation == 1 && after?.monster.id != old)
+        // The same request again (a redelivery) and a request for another partner change nothing.
+        service.session(WCSession.default, didReceiveUserInfo: try userInfo(request))
+        let other = NewEggRequest(targetMonsterId: candidateId(9), requestedAt: t0)
+        service.session(WCSession.default, didReceiveUserInfo: try userInfo(other))
+        await waitUntil { rig.sync.republished == 2 && service.inFlight.count == 0 }
+        #expect(rig.store.state == after)
+        #expect(rig.sync.republished == 2) // each ignored request answers with the latest snapshot
+        #expect(rig.file.saves == 1)
+    }
+
+    @Test func aDelegateCallOffTheMainActorIsCountedAndApplied() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        let old = try #require(rig.file.stored).monster.id
+        let service = WatchSyncService()
+        service.onNewEggRequest = { request in await rig.store.startNewEgg(target: request.targetMonsterId) }
+        let data = try JSONEncoder().encode(NewEggRequest(targetMonsterId: old, requestedAt: t0))
+        let info: [String: Data] = [NewEggRequest.userInfoKey: data]
+        // WatchConnectivity calls its delegate on a background queue.
+        await Task.detached {
+            service.session(WCSession.default, didReceiveUserInfo: info)
+            // Counted before the call returns, so a background task never sees "nothing arrived".
+            #expect(service.inFlight.count == 1)
+        }.value
+        await waitUntil { rig.store.state?.generation == 1 && service.inFlight.count == 0 }
+        #expect(rig.store.state?.generation == 1)
+        #expect(service.inFlight.count == 0)
+    }
+
+    @Test func connectivityIsIdleOnlyAfterActivationAndWithNothingPending() {
+        func idle(supported: Bool = true, activated: Bool, reported: Bool = false, pending: Bool = false, inFlight: Int = 0) -> Bool {
+            ConnectivityIdle.isIdle(supported: supported, activated: activated, activationReported: reported,
+                                    hasContentPending: pending, requestsInFlight: inFlight)
+        }
+        #expect(!idle(activated: false)) // woken by a transfer, not activated yet: wait
+        #expect(!idle(activated: true, pending: true))
+        #expect(idle(activated: true))
+        #expect(!idle(activated: true, inFlight: 1))
+        #expect(idle(activated: false, reported: true)) // activation failed: do not wait forever
+        #expect(!idle(activated: false, reported: true, inFlight: 1))
+        #expect(idle(supported: false, activated: false))
+        #expect(!idle(supported: false, activated: false, inFlight: 1))
+    }
+
+    @Test func anUnreadableTransferIsDropped() async throws {
+        let service = WatchSyncService()
+        var seen = 0
+        service.onNewEggRequest = { _ in seen += 1 }
+        service.session(WCSession.default, didReceiveUserInfo: [NewEggRequest.userInfoKey: Data("x".utf8)])
+        for _ in 0..<20 { await Task.yield() }
+        #expect(seen == 0 && service.inFlight.count == 0)
+    }
+}
+
+private func offerEvent(_ id: UUID = candidateId(70)) -> GrowthEvent {
+    let json = """
+    {"kind":"newEggReady","monsterId":"\(id.uuidString)","fromSpeciesId":"a","toSpeciesId":"a",
+     "intermediateSpeciesIds":[],"evolutionSteps":0,"fromName":"A","toName":"A"}
+    """
+    return try! JSONDecoder().decode(GrowthEvent.self, from: Data(json.utf8))
+}
+
+private func hatchEvent(_ id: UUID = candidateId(71)) -> GrowthEvent {
+    let json = """
+    {"kind":"hatched","monsterId":"\(id.uuidString)","fromSpeciesId":"egg","toSpeciesId":"b",
+     "intermediateSpeciesIds":[],"evolutionSteps":0,"fromName":"Egg","toName":"B"}
+    """
+    return try! JSONDecoder().decode(GrowthEvent.self, from: Data(json.utf8))
+}
+
+@MainActor
+@Suite(.timeLimit(.minutes(1)))
+struct AlertFlowTests {
+    @Test func anAlertNeverShowsWhileADialogIsWantedOrClosing() {
+        var flow = AlertFlow()
+        flow.present(hatchEvent(), dialogWanted: true)
+        #expect(flow.presented == nil)
+        flow.present(hatchEvent(), dialogWanted: false)
+        #expect(flow.presented != nil && !flow.dialogMayShow)
+        let shown = flow.close()
+        #expect(shown != nil)
+        #expect(flow.closing && !flow.dialogMayShow)
+        flow.present(offerEvent(), dialogWanted: false) // closing: nothing presents
+        #expect(flow.presented == nil)
+    }
+
+    @Test func aWantedDialogTakesTheNextSlotInsteadOfTheNextAlert() {
+        var flow = AlertFlow()
+        let offer = offerEvent()
+        flow.present(offer, dialogWanted: false)
+        _ = flow.close()
+        // "새 알 키우기" was chosen: the dialog is wanted, a queued alert waits.
+        flow.pauseEnded(next: hatchEvent(), dialogWanted: true)
+        #expect(flow.presented == nil && !flow.closing && flow.dialogMayShow)
+        // Dialog dismissed: the queued alert continues.
+        flow.present(hatchEvent(), dialogWanted: false)
+        #expect(flow.presented == hatchEvent())
+    }
+
+    @Test func withoutADialogTheNextAlertFollowsTheClosingPause() {
+        var flow = AlertFlow()
+        flow.present(hatchEvent(), dialogWanted: false)
+        _ = flow.close()
+        flow.pauseEnded(next: offerEvent(), dialogWanted: false)
+        #expect(flow.presented == offerEvent())
+    }
+
+    @Test func aShownOfferIsDroppedOnceItLeavesTheQueue() {
+        var flow = AlertFlow()
+        let offer = offerEvent()
+        flow.present(offer, dialogWanted: false)
+        let kept = flow.dropOfferIfGone(from: [offer])
+        #expect(!kept)
+        #expect(flow.presented == offer)
+        let dropped = flow.dropOfferIfGone(from: [hatchEvent()])
+        #expect(dropped)
+        #expect(flow.presented == nil && !flow.closing)
+        // Other kinds stay on screen: they are records.
+        flow.present(hatchEvent(), dialogWanted: false)
+        let recordKept = flow.dropOfferIfGone(from: [])
+        #expect(!recordKept)
+        #expect(flow.presented != nil)
+    }
+}
+
+@MainActor
+@Suite(.timeLimit(.minutes(1)))
+struct NewEggFirstLoadTests {
+    @Test func aRequestThatLoadsFirstSchedulesTheRefreshAndFillsTheWidget() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: false)
+        let old = try #require(rig.file.stored).monster.id
+        #expect(rig.store.state == nil)
+        let ignored = await rig.store.startNewEgg(target: candidateId(4_001)) // ignored path still loads
+        #expect(!ignored)
+        #expect(rig.scheduler.scheduled == 1)
+        #expect(rig.widget.published.count == 1)
+        let applied = await rig.store.startNewEgg(target: old)
+        #expect(applied)
+        #expect(rig.scheduler.scheduled == 2)
+    }
+
+    @Test func aFailedFirstLoadKeepsTheRefreshChainAlive() async {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: false)
+        rig.file.failLoad = true
+        let applied = await rig.store.startNewEgg(target: candidateId(1))
+        #expect(!applied)
+        #expect(rig.scheduler.scheduled == 1)
+    }
+
+    @Test func startingAnEggKeepsAHealthNotice() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        rig.health.passThrough = true
+        await rig.store.refresh()
+        let notice = try #require(rig.store.message) // no readable steps today
+        let old = try #require(rig.store.state).monster.id
+        let applied = await rig.store.startNewEgg(target: old)
+        #expect(applied)
+        #expect(rig.store.message == notice)
+    }
+
+    @Test func startingAnEggClearsItsOwnEarlierFailure() async throws {
+        let rig = Rig(state: finishedPartner(steps: Monster.stepsForNewEgg), active: true)
+        let old = try #require(rig.file.stored).monster.id
+        rig.file.failSave = true
+        _ = await rig.store.startNewEgg(target: old)
+        #expect(rig.store.message != nil)
+        rig.file.failSave = false
+        let applied = await rig.store.startNewEgg(target: old)
+        #expect(applied)
+        #expect(rig.store.message == nil)
     }
 }

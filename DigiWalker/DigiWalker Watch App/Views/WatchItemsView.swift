@@ -1,7 +1,7 @@
 import DigiWalkerCore
 import SwiftUI
 
-/// Items the partner has found (never consumed), one row per kind. Text only: no item pictures are used.
+/// Items held now (found minus used up by locked evolutions), one row per kind. Text only: no item pictures are used.
 struct WatchItemsView: View {
     let summaries: [ItemSummary]
 

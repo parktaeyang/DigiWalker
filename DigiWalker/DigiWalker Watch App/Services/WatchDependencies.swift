@@ -17,6 +17,13 @@ protocol StateStoring {
 
 protocol SnapshotPublishing {
     func publish(_ snapshot: MonsterSnapshot)
+    /// Sends the snapshot again even if the same revision went out before. For an ignored iPhone request: the
+    /// iPhone may be waiting on a state change that already happened or never will.
+    func republish(_ snapshot: MonsterSnapshot)
+}
+
+extension SnapshotPublishing {
+    func republish(_ snapshot: MonsterSnapshot) { publish(snapshot) }
 }
 
 protocol GrowthAnnouncing {
@@ -26,6 +33,8 @@ protocol GrowthAnnouncing {
     func notify(_ event: GrowthEvent) async throws
     /// Asks for notification permission if undecided. Returns whether notifications are allowed.
     func requestPermission() async -> Bool
+    /// Removes delivered and scheduled notifications with these identifiers (an event that is no longer true).
+    func withdraw(identifiers: [String])
 }
 
 protocol PendingEventStoring {
@@ -152,6 +161,7 @@ struct InertAnnouncer: GrowthAnnouncing {
     func playHaptic(for event: GrowthEvent) {}
     func notify(_ event: GrowthEvent) async throws {}
     func requestPermission() async -> Bool { false }
+    func withdraw(identifiers: [String]) {}
 }
 
 struct InertObserver: HealthObserving {

@@ -29,7 +29,7 @@ enum SettlementOutcome: String, Codable, Equatable {
         case .arrived: "도착 (결과 없음)"
         case .unchanged: "변경 없음"
         case .settled: "정산 반영"
-        case .growth: "부화·진화·아이템"
+        case .growth: "부화·진화·아이템·새 알"
         case .notEnrolled: "미연결"
         case .failed: "실패"
         }

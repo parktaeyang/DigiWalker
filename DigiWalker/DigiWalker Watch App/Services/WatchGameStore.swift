@@ -18,6 +18,13 @@ final class WatchGameStore: ObservableObject {
     /// Events the foreground alert may show: those decided for the foreground or whose notification failed.
     var presentableAlerts: [GrowthEvent] { alerts.filter { !notifying.contains($0.id) } }
     var pendingAlert: GrowthEvent? { presentableAlerts.first }
+    /// Partner the user was asked about ("start a new egg?"), set by the button, the alert or the notification action.
+    /// The confirmation dialog shows only while it is still the current finished partner.
+    @Published private(set) var newEggConfirmation: UUID?
+    var confirmingNewEgg: Bool {
+        guard let id = newEggConfirmation, let monster = state?.monster else { return false }
+        return monster.id == id && monster.canStartNewEgg
+    }
     private let file: any StateStoring
     private let health: any HealthReading
     private let sync: any SnapshotPublishing
@@ -121,21 +128,7 @@ final class WatchGameStore: ObservableObject {
         }
         syncPendingEvents()
         do {
-            if state == nil {
-                if let saved = try file.load() {
-                    var updated = saved
-                    updated.migrateLegacyStarter()
-                    // Random evolution results only become real once commit() saves them.
-                    updated.migrateToEvolutionCatalog()
-                    if updated == saved {
-                        state = saved
-                    } else {
-                        try commit(updated)
-                    }
-                } else {
-                    try commit(GameState())
-                }
-            }
+            try loadStateIfNeeded()
             guard var saved = state else { return outcome }
             ensureScheduled()
             sync.publish(saved.snapshot)
@@ -161,8 +154,10 @@ final class WatchGameStore: ObservableObject {
                 // Write-ahead: the event is recorded synchronously right after the commit, before anything can
                 // suspend, so a stop during delivery cannot lose it. Only a committed settlement makes events.
                 // Items found in this settlement come first, then the hatch or evolution (one event per item).
+                // Crossing 85,000 comes last: a big batch may evolve and cross in one settlement.
                 let events = GrowthEvent.items(between: saved, candidate)
                     + (GrowthEvent.between(saved, candidate).map { [$0] } ?? [])
+                    + (GrowthEvent.newEggReady(between: saved, candidate).map { [$0] } ?? [])
                 let foreground = activity.isActive
                 // Hidden from the alert from the moment they are queued, so an activation while the
                 // notification is in flight cannot show them twice.
@@ -200,6 +195,107 @@ final class WatchGameStore: ObservableObject {
             }
         }
         return outcome
+    }
+
+    /// First load: the saved file (migrated if needed) or a new game. A failure leaves `state` nil and the file alone.
+    private func loadStateIfNeeded() throws {
+        guard state == nil else { return }
+        if let saved = try file.load() {
+            var updated = saved
+            updated.migrateLegacyStarter()
+            // Random evolution results only become real once commit() saves them.
+            updated.migrateToEvolutionCatalog()
+            if updated == saved {
+                state = saved
+            } else {
+                try commit(updated)
+            }
+        } else {
+            try commit(GameState())
+        }
+    }
+
+    /// Asks for the "start a new egg?" confirmation. Never starts one by itself.
+    func requestNewEggConfirmation(for monsterId: UUID) {
+        newEggConfirmation = monsterId
+    }
+
+    func requestNewEggConfirmation() {
+        newEggConfirmation = state?.monster.id
+    }
+
+    func cancelNewEggConfirmation() {
+        newEggConfirmation = nil
+    }
+
+    /// Replaces the finished partner `target` with a new egg. Runs in the settlement chain, so it never overlaps a
+    /// settlement and a request made during one runs after it. Applies only if `target` is still the current
+    /// partner and can start a new egg (so a repeated or late request changes nothing); returns whether it did.
+    /// The change counts only after the file was saved; a failed save leaves state, file and queue as they were.
+    @discardableResult
+    func startNewEgg(target: UUID) async -> Bool {
+        inFlight += 1
+        busy = true
+        defer {
+            inFlight -= 1
+            busy = inFlight > 0
+        }
+        let previous = tail
+        let task = Task { [self] in
+            _ = await previous?.value
+            return performNewEgg(target: target)
+        }
+        tail = task
+        return await task.value == .growth
+    }
+
+    private var newEggFailureMessage: String?
+
+    private func setNewEggFailure(_ text: String) {
+        newEggFailureMessage = text
+        message = text
+    }
+
+    private func performNewEgg(target: UUID) -> SettlementOutcome {
+        syncPendingEvents()
+        let loadingSaved = state == nil
+        do {
+            try loadStateIfNeeded()
+        } catch {
+            // Same as a failed first settlement: the refresh chain stays alive while enrollment is unknown.
+            if state == nil { scheduler.scheduleNextRefresh() }
+            setNewEggFailure("저장된 기록을 불러오지 못해 새 알을 시작하지 못했어요. (\(error.localizedDescription))")
+            return .failed
+        }
+        guard let saved = state else { return .unchanged }
+        if saved.enrolledAt != nil { scheduler.scheduleNextRefresh() }
+        // The first load only fills in a missing or stale widget copy; a commit below refreshes it anyway.
+        if loadingSaved { publishWidget(saved) }
+        var candidate = saved
+        guard candidate.startNewEgg(target: target, at: now()) else {
+            // Already done or no longer possible: nothing changes, but the iPhone may be waiting for an answer.
+            if newEggConfirmation == target { newEggConfirmation = nil }
+            sync.republish(saved.snapshot)
+            return .unchanged
+        }
+        do {
+            try commit(candidate)
+        } catch {
+            setNewEggFailure("새 알을 시작하지 못했어요. 기록은 그대로예요. (\(error.localizedDescription))")
+            return .failed
+        }
+        // Only a leftover new-egg failure is cleared; a health notice stays.
+        if let failure = newEggFailureMessage, message == failure { message = nil }
+        newEggFailureMessage = nil
+        newEggConfirmation = nil
+        // Only the offer for the finished partner is void now; hatches, evolutions and finds stay as records.
+        let offer = GrowthEvent.newEggOfferId(for: target)
+        notifying.remove(offer)
+        removeAlert(id: offer)
+        announcer.withdraw(identifiers: [GrowthNotifier.newEggIdentifier(monsterId: target)])
+        sync.publish(candidate.snapshot)
+        publishWidget(candidate)
+        return .growth
     }
 
     /// Starts the HealthKit observer once the partner is enrolled (enrollment follows the access request).
