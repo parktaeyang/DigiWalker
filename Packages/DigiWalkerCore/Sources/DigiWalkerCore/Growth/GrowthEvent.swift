@@ -21,6 +21,12 @@ public enum KoreanParticle {
         return s.isHangul ? (s.finalJamo == 0 ? "를" : "을") : "을(를)"
     }
 
+    /// 은/는
+    public static func topic(_ name: String) -> String {
+        let s = lastSyllable(name)
+        return s.isHangul ? (s.finalJamo == 0 ? "는" : "은") : "은(는)"
+    }
+
     /// 와/과
     public static func with(_ name: String) -> String {
         let s = lastSyllable(name)
@@ -36,7 +42,7 @@ public enum KoreanParticle {
 
 /// A hatch, evolution or item find that happened between two states of the same partner.
 public struct GrowthEvent: Equatable, Sendable, Codable {
-    public enum Kind: String, Equatable, Sendable, Codable { case hatched, evolved, itemFound }
+    public enum Kind: String, Equatable, Sendable, Codable { case hatched, evolved, itemFound, newEggReady }
 
     public let kind: Kind
     public let monsterId: UUID
@@ -53,8 +59,12 @@ public struct GrowthEvent: Equatable, Sendable, Codable {
     /// Stable identity: one per partner generation and species change, or per item segment.
     public var id: String {
         if kind == .itemFound, let segment { return "\(monsterId.uuidString)-item-\(segment)" }
+        if kind == .newEggReady { return Self.newEggOfferId(for: monsterId) }
         return "\(monsterId.uuidString)-\(fromSpeciesId)-\(toSpeciesId)"
     }
+
+    /// Id of the new-egg offer of a partner (one per partner), e.g. to take it out of a queue once it is void.
+    public static func newEggOfferId(for monsterId: UUID) -> String { "\(monsterId.uuidString)-newegg" }
 
     /// Items granted in `after` that `before` did not have, oldest segment first. Empty for another partner.
     public static func items(between before: GameState, _ after: GameState) -> [GrowthEvent] {
@@ -71,6 +81,18 @@ public struct GrowthEvent: Equatable, Sendable, Codable {
             }
     }
 
+    /// Fires once, when the same partner's credited steps cross `Monster.stepsForNewEgg` between the two states.
+    /// A partner that already was past it in `before` (e.g. loaded after an app update) gets no event. Nil for
+    /// another partner.
+    public static func newEggReady(between before: GameState, _ after: GameState) -> GrowthEvent? {
+        guard before.monster.id == after.monster.id,
+              before.monster.totalCreditedSteps < Monster.stepsForNewEgg,
+              after.monster.canStartNewEgg else { return nil }
+        return GrowthEvent(kind: .newEggReady, monsterId: after.monster.id, fromSpeciesId: after.monster.speciesId,
+                           toSpeciesId: after.monster.speciesId, intermediateSpeciesIds: [], evolutionSteps: 0,
+                           fromName: after.monster.name, toName: after.monster.name, itemId: nil, segment: nil)
+    }
+
     /// Nil when the partner generation differs or the species did not change.
     public static func between(_ before: GameState, _ after: GameState) -> GrowthEvent? {
         guard before.monster.id == after.monster.id,
@@ -83,8 +105,8 @@ public struct GrowthEvent: Equatable, Sendable, Codable {
         switch kind {
         case .hatched:
             steps = after.monster.stage ?? intermediates.count
-        case .itemFound:
-            return nil // item events come from `items(between:_:)`
+        case .itemFound, .newEggReady:
+            return nil // these events come from `items(between:_:)` and `newEggReady(between:_:)`
         case .evolved:
             if let from = before.monster.stage, let to = after.monster.stage, to > from {
                 steps = to - from
@@ -149,6 +171,8 @@ public struct GrowthEvent: Equatable, Sendable, Codable {
 
     public var title: String {
         switch kind {
+        case .newEggReady:
+            return "\(toName)\(KoreanParticle.with(toName)) 끝까지 걸었어요!"
         case .itemFound:
             return "\(itemName)\(KoreanParticle.object(itemName)) 얻었어요!"
         case .hatched:
@@ -166,6 +190,8 @@ public struct GrowthEvent: Equatable, Sendable, Codable {
 
     public var body: String {
         switch kind {
+        case .newEggReady:
+            return "새 알을 키울지, 궁극체로 남을지 골라 주세요"
         case .itemFound:
             // No species name: the partner may have evolved since the drop. Fixed locale so the text never varies.
             let steps = ((segment ?? 1) * ItemDrop.stepsPerSegment).formatted(.number.locale(Locale(identifier: "en_US")))

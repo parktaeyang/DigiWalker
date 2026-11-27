@@ -51,23 +51,25 @@ extension WidgetSnapshot {
         switch progress {
         case .hatch(let remaining): "부화까지 \(remaining.formatted())걸음"
         case .evolution(let remaining): "다음 진화까지 \(remaining.formatted())걸음"
-        case .finalStage: "최종 단계"
+        case .newEgg(let remaining): "새 알까지 \(remaining.formatted())걸음"
+        case .newEggReady: "새 알 준비"
         case .unknown: "단계 정보를 확인 중"
         }
     }
 
     var shortProgressText: String {
         switch progress {
-        case .hatch(let remaining), .evolution(let remaining): "\(remaining.formatted())걸음"
-        case .finalStage: "최종"
+        case .hatch(let remaining), .evolution(let remaining), .newEgg(let remaining): "\(remaining.formatted())걸음"
+        case .newEggReady: "새 알"
         case .unknown: "—"
         }
     }
 
     var inlineText: String {
         switch progress {
-        case .hatch(let remaining), .evolution(let remaining): "\(name) · \(remaining.formatted())걸음 남음"
-        case .finalStage: "\(name) · 최종 단계"
+        case .hatch(let remaining), .evolution(let remaining), .newEgg(let remaining):
+            "\(name) · \(remaining.formatted())걸음 남음"
+        case .newEggReady: "\(name) · 새 알 준비"
         case .unknown: name
         }
     }

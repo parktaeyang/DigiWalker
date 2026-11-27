@@ -17,7 +17,8 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public let stage: Int?
     public let isEgg: Bool
     public let totalCreditedSteps: Int
-    /// Cumulative steps of the next hatch or evolution; nil at the last stage or when the stage is unknown.
+    /// Cumulative steps of the next hatch, evolution or (at the last stage) new egg; nil when the stage is unknown.
+    /// A copy written before the new egg rule has nil at the last stage; `remainingSteps` covers that.
     public let nextRequiredSteps: Int?
     public let revision: Int
     public let updatedAt: Date
@@ -35,6 +36,8 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             nextRequiredSteps = Monster.stepsToHatch
         } else if let stage = monster.stage, stage + 1 < EvolutionCard.stageCount {
             nextRequiredSteps = EvolutionCard.requiredSteps(stage: stage + 1)
+        } else if monster.stage == EvolutionCard.stageCount - 1 {
+            nextRequiredSteps = Monster.stepsForNewEgg
         } else {
             nextRequiredSteps = nil
         }
@@ -42,29 +45,46 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         updatedAt = now
     }
 
-    /// Steps left until the next hatch or evolution, never negative. Nil when there is no next stage.
+    /// Steps left until the next hatch, evolution or new egg, never negative. Nil when the stage is unknown.
     public var remainingSteps: Int? {
-        nextRequiredSteps.map { max(0, $0 - totalCreditedSteps) }
+        if let nextRequiredSteps { return max(0, nextRequiredSteps - totalCreditedSteps) }
+        // An older copy has no target at the last stage: work it out from the steps.
+        if stage == EvolutionCard.stageCount - 1 { return max(0, Monster.stepsForNewEgg - totalCreditedSteps) }
+        return nil
     }
 
     /// What the complication says about the next step.
     public enum Progress: Equatable, Sendable {
         case hatch(remaining: Int)
         case evolution(remaining: Int)
-        case finalStage
+        /// Last stage, `remaining` steps until a new egg may be started.
+        case newEgg(remaining: Int)
+        /// Last stage with enough steps to start a new egg.
+        case newEggReady
         /// No next stage and not the last one: the stage is unknown, so nothing is claimed.
         case unknown
+
+        /// Same case, ignoring the remaining steps (e.g. counting down to a new egg vs. ready now).
+        func sameKind(as other: Self) -> Bool {
+            switch (self, other) {
+            case (.hatch, .hatch), (.evolution, .evolution), (.newEgg, .newEgg), (.newEggReady, .newEggReady),
+                 (.unknown, .unknown): true
+            default: false
+            }
+        }
     }
 
     public var progress: Progress {
         if isEgg { return .hatch(remaining: remainingSteps ?? 0) }
-        if let remainingSteps { return .evolution(remaining: remainingSteps) }
-        if stage == EvolutionCard.stageCount - 1 { return .finalStage }
-        return .unknown
+        guard let remainingSteps else { return .unknown }
+        if stage == EvolutionCard.stageCount - 1 {
+            return remainingSteps > 0 ? .newEgg(remaining: remainingSteps) : .newEggReady
+        }
+        return .evolution(remaining: remainingSteps)
     }
 
     /// True if a widget would draw the same thing: the same look and the same remaining steps. Steps counted
-    /// beyond the last stage show nowhere, so they do not count. Ignores `revision` and `updatedAt`.
+    /// once a new egg is possible show nowhere, so they do not count. Ignores `revision` and `updatedAt`.
     public func sameDisplay(as other: WidgetSnapshot) -> Bool {
         sameLook(as: other) && remainingSteps == other.remainingSteps
     }
@@ -73,6 +93,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public func sameLook(as other: WidgetSnapshot) -> Bool {
         monsterId == other.monsterId && speciesId == other.speciesId && name == other.name
             && stage == other.stage && isEgg == other.isEgg && nextRequiredSteps == other.nextRequiredSteps
+            && progress.sameKind(as: other.progress)
     }
 }
 

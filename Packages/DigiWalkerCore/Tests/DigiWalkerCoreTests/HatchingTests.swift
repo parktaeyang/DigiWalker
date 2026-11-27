@@ -23,7 +23,6 @@ import Testing
         #expect(state.monster.name == baby.name)
         #expect(state.monster.totalCreditedSteps == 500)
         #expect(state.monster.id == eggID)
-        #expect(state.monster.experience == 40) // Daily thresholds: 499 and 1.
         #expect(state.snapshot.supersedes(before))
         var restored = try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state))
         restored.settle(day: tomorrow, steps: 1, distance: nil)
@@ -49,7 +48,6 @@ import Testing
         #expect(state.dex.first?.speciesId == "digitama")
         #expect(state.dex.last?.speciesId == state.monster.speciesId)
         #expect(state.monster.totalCreditedSteps == 4_030)
-        #expect(state.monster.experience == 400)
     }
 
     @Test(arguments: [0, 499, 500, 4_500]) func migrateSavedStarter(steps: Int) throws {
@@ -60,7 +58,7 @@ import Testing
         state.migrateLegacyStarter()
         #expect(state.monster.id == original.monster.id)
         #expect(state.monster.totalCreditedSteps == steps)
-        #expect(state.monster.experience == original.monster.experience)
+        #expect(state.monster.distanceMeters == original.monster.distanceMeters)
         #expect(state.ledgers == original.ledgers)
         #expect(state.snapshot.supersedes(original.snapshot))
         #expect(state.monster.isEgg == (steps < 500))

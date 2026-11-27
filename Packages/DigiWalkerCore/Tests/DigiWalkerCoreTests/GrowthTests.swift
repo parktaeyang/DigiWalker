@@ -12,17 +12,16 @@ import Testing
     @Test func rewardsByDailyTotalAndKeepsHighWaterMark() {
         var game = newState()
         game.enroll(at: start)
-        for (steps, expectedXP) in [(99, 0), (150, 10), (200, 20), (1000, 100),
-                                    (2500, 250), (2500, 250), (2200, 250), (3000, 300)] {
+        for (steps, expectedCredited) in [(99, 99), (150, 150), (200, 200), (1000, 1000),
+                                          (2500, 2500), (2500, 2500), (2200, 2500), (3000, 3000)] {
             game.settle(day: start, steps: steps, distance: nil)
-            #expect(game.monster.experience == expectedXP)
+            #expect(game.monster.totalCreditedSteps == expectedCredited)
         }
-        #expect(game.monster.level == 2)
         #expect(game.monster.totalCreditedSteps == 3000)
         game.settle(day: start, steps: nil, distance: 2000)
         game.settle(day: start, steps: nil, distance: 1000)
         #expect(game.monster.distanceMeters == 2000)
-        #expect(game.monster.experience == 300)
+        #expect(game.monster.totalCreditedSteps == 3000)
     }
 
     @Test func enrollmentAndNewDayHaveIndependentThresholds() {
@@ -36,9 +35,9 @@ import Testing
         game.settle(day: start, steps: 150, distance: nil)
         let tomorrow = start.addingTimeInterval(86400)
         game.settle(day: tomorrow, steps: 50, distance: nil)
-        #expect(game.monster.experience == 10)
+        #expect(game.monster.totalCreditedSteps == 200)
         game.settle(day: tomorrow, steps: 100, distance: nil)
-        #expect(game.monster.experience == 20)
+        #expect(game.monster.totalCreditedSteps == 250)
         #expect(game.ledgers.count == 2)
     }
 
@@ -73,7 +72,7 @@ import Testing
         let replacement = GameState.fixedEgg(now: start.addingTimeInterval(10), id: testPartnerId(2)).snapshot
         #expect(replacement.supersedes(second))
         #expect(!second.supersedes(replacement))
-        let unknownVersion = MonsterSnapshot(schemaVersion: 4, revision: 5, createdAt: start,
+        let unknownVersion = MonsterSnapshot(schemaVersion: 5, revision: 5, createdAt: start,
             monster: game.monster, todaySteps: nil, observedAt: nil, timeZone: .gmt)
         #expect(!unknownVersion.supersedes(nil))
     }
@@ -90,7 +89,6 @@ extension GrowthTests {
             return from == start ? 150 : 2150
         }
         #expect(result.todaySteps == 2150)
-        #expect(result.monster.experience == 10)
         #expect(result.monster.totalCreditedSteps == 150)
     }
 
@@ -112,7 +110,7 @@ extension GrowthTests {
         #expect(intervals[0].end == intervals[1].start)
         #expect(intervals[1].duration == 23 * 3600)
         #expect(intervals[1].end == intervals[2].start)
-        #expect(result.monster.experience == 30)
+        #expect(result.monster.totalCreditedSteps == 300)
         #expect(result.todaySteps == 100)
     }
 }

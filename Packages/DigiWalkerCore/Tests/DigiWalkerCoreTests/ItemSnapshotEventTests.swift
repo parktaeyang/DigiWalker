@@ -29,7 +29,7 @@ import Testing
     @Test func v3RoundTripsAndCarriesAnItemSummary() throws {
         let state = try withItems()
         let published = state.snapshot
-        #expect(published.schemaVersion == 3 && published.items == state.itemSummaries)
+        #expect(published.schemaVersion == 4 && published.items == state.itemSummaries)
         #expect(published.items?.map(\.count).reduce(0, +) == state.items.count)
         #expect(published.supersedes(nil))
         let decoded = try JSONDecoder().decode(MonsterSnapshot.self, from: JSONEncoder().encode(published))
@@ -155,7 +155,7 @@ import Testing
         var generator = SeededGenerator(seed: 1)
         state.migrateToEvolutionCatalog(at: start, using: &generator)
         let v3 = state.snapshot
-        #expect(v3.schemaVersion == 3)
+        #expect(v3.schemaVersion == MonsterSnapshot.currentSchemaVersion)
         #expect(v3.monster.id == v2.monster.id)
         #expect(v3.revision >= v2.revision)
         #expect(v3.supersedes(v2))

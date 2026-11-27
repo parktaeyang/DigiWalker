@@ -16,7 +16,25 @@ public struct ItemGrant: Codable, Equatable, Sendable {
     }
 }
 
-/// Per-item summary sent to the iPhone. `currentPartnerCount` is the part of `count` found by the current partner.
+/// One item consumed by an evolution into `speciesId` at `stage`. `(monsterId, stage)` is unique.
+public struct ItemUse: Codable, Equatable, Sendable {
+    public let itemId: String
+    public let monsterId: UUID
+    public let speciesId: String
+    public let stage: Int
+    public let usedAt: Date
+
+    public init(itemId: String, monsterId: UUID, speciesId: String, stage: Int, usedAt: Date) {
+        self.itemId = itemId
+        self.monsterId = monsterId
+        self.speciesId = speciesId
+        self.stage = stage
+        self.usedAt = usedAt
+    }
+}
+
+/// Per-item summary sent to the iPhone. `count` is the number currently held (grants minus uses), at least 1.
+/// `currentPartnerCount` is the part of it found by the current partner.
 public struct ItemSummary: Codable, Equatable, Sendable {
     public let itemId: String
     public let count: Int

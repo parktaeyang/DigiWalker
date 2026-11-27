@@ -169,7 +169,6 @@ import Testing
         state.settle(day: day2, steps: 2_000, distance: nil, using: &generator)
         #expect(state.monster.totalCreditedSteps == 6_000)
         #expect(state.monster.stage == 1)
-        #expect(state.monster.experience == 600)
     }
 
     @Test func replayAndLowerReadingsChangeNothingAndDrawNothing() {
@@ -196,7 +195,7 @@ import Testing
         #expect(counting.draws == drawn)
     }
 
-    @Test func evolutionKeepsIdentityLedgerAndXP() {
+    @Test func evolutionKeepsIdentityAndLedger() {
         var state = enrolled()
         var generator = SeededGenerator(seed: 5)
         state.settle(day: start, steps: 4_999, distance: 800, at: start, using: &generator)
@@ -206,7 +205,7 @@ import Testing
         #expect(state.monster.stage == 4)
         for (key, ledger) in before.ledgers { #expect(state.ledgers[key] == ledger) }
         #expect(state.ledgers.count == 2)
-        #expect(state.monster.experience == 490 + 4_600)
+        #expect(state.monster.totalCreditedSteps == 4_999 + 46_000)
         #expect(state.monster.distanceMeters == 1000 + 800)
         #expect(state.revision == before.revision + 1)
     }

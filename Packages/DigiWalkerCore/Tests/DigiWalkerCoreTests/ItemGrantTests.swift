@@ -170,8 +170,20 @@ import Testing
             let data = try tampered(state) { $0[key] = nil }
             #expect(throws: DecodingError.self, "only \(key) missing") { try JSONDecoder().decode(GameState.self, from: data) }
         }
-        let old = try tampered(state) { $0["items"] = nil; $0["itemSegmentsRolled"] = nil }
+        let old = try tampered(state) {
+            for key in ["items", "itemSegmentsRolled", "itemUses", "generation"] { $0[key] = nil }
+        }
         #expect(try JSONDecoder().decode(GameState.self, from: old).itemSegmentsRolled == 3)
+        // A modern file (has generation or itemUses) that lost both item keys is damage, not a legacy file.
+        for keep in ["generation", "itemUses"] {
+            let modern = try tampered(state) {
+                $0["items"] = nil; $0["itemSegmentsRolled"] = nil
+                for key in ["generation", "itemUses"] where key != keep { $0[key] = nil }
+            }
+            #expect(throws: DecodingError.self, "modern without items, keeping \(keep)") {
+                try JSONDecoder().decode(GameState.self, from: modern)
+            }
+        }
         // Another partner's earlier grants keep their own segment numbers and are not tied to the current checkpoint.
         let other = try tampered(state) { $0["items"] = [grant(7, monster: testPartnerId(99)), grant(1)] }
         #expect(throws: Never.self) { try JSONDecoder().decode(GameState.self, from: other) }
@@ -270,7 +282,9 @@ extension ItemGrantTests {
             #expect(state.monster.stage == 5)
             for entry in state.dex {
                 if let item = Self.lockedItems[entry.speciesId] {
-                    #expect(state.owns(item), "\(entry.speciesId) without \(item)")
+                    // Owned when it was picked: the grant exists and exactly this evolution consumed one.
+                    #expect(state.items.contains { $0.itemId == item }, "\(entry.speciesId) without \(item)")
+                    #expect(state.itemUses.contains { $0.itemId == item && $0.speciesId == entry.speciesId })
                     reachedLocked += 1
                 }
             }
@@ -300,6 +314,7 @@ extension ItemGrantTests {
         }
         var loaded = try JSONDecoder().decode(GameState.self, from: data)
         #expect(!loaded.owns("digimental_fate"))
+        #expect(loaded.itemUses.isEmpty)
         settle(&loaded, steps: 100_000, day: day2)
         #expect(loaded.monster.speciesId == "rapidmon_armor")
     }

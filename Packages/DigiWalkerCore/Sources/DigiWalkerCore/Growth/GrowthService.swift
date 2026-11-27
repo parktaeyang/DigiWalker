@@ -10,7 +10,8 @@ public enum GrowthService {
     public static func reconcile(_ saved: GameState, through now: Date,
         random: (any RandomNumberGenerator)? = nil,
         read: (ActivityMetric, Date, Date) async throws -> Double?) async throws -> GameState {
-        guard let enrolled = saved.enrolledAt, now >= enrolled else { return saved }
+        // The cutoff is the enrollment, or the current partner's start after a new egg (nothing earlier is read).
+        guard let enrolled = saved.stepCutoff, now >= enrolled else { return saved }
         let calendar = saved.calendar
         let today = calendar.startOfDay(for: now)
         let firstDay = calendar.startOfDay(for: enrolled)
@@ -19,6 +20,7 @@ public enum GrowthService {
         var candidate = saved
         // Item preference uses only the card fixed before this reconcile began (same for every day and every retry).
         let committedCardId = saved.monster.cardId
+        let committedUseCount = saved.itemUses.count
         // `random` is copied here, so a seeded generator passed by the caller is not advanced.
         var generator: any RandomNumberGenerator = random ?? SystemRandomNumberGenerator()
         var todayCount: Int?
@@ -31,7 +33,8 @@ public enum GrowthService {
             let end = min(next, now)
             let steps = try await read(.steps, start, end).map(Int.init)
             let meters = try await read(.distanceMeters, start, end)
-            candidate.settle(day: day, steps: steps, distance: meters, at: now, committedCardId: committedCardId, using: &generator)
+            candidate.settle(day: day, steps: steps, distance: meters, at: now, committedCardId: committedCardId,
+                             committedUseCount: committedUseCount, using: &generator)
             if day == today {
                 if start == today {
                     todayCount = steps

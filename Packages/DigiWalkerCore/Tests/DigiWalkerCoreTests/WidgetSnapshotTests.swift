@@ -44,12 +44,12 @@ struct WidgetSnapshotTests {
         #expect(snapshot.remainingSteps == EvolutionCard.requiredSteps(stage: 1) - 1_000)
     }
 
-    @Test func finalStageHasNoNext() {
+    @Test func finalStageCountsDownToNewEgg() {
         let final = stage(5)
         let snapshot = WidgetSnapshot(state: final, now: t0)
         #expect(snapshot.stage == EvolutionCard.stageCount - 1)
-        #expect(snapshot.nextRequiredSteps == nil)
-        #expect(snapshot.remainingSteps == nil)
+        #expect(snapshot.nextRequiredSteps == Monster.stepsForNewEgg)
+        #expect(snapshot.remainingSteps == Monster.stepsForNewEgg - EvolutionCard.requiredSteps(stage: 5))
     }
 
     @Test func schemaVersionRoundTripsAndSupportsOnlyKnownVersions() throws {
@@ -147,9 +147,9 @@ struct PixelScalingTests {
 }
 
 struct WidgetDisplayRulesTests {
-    @Test func stepsBeyondTheLastStageAreNotAVisibleChange() {
-        let final = stage(5)
-        let more = settled(final, steps: EvolutionCard.requiredSteps(stage: 5) + 3_000)
+    @Test func stepsBeyondNewEggThresholdAreNotAVisibleChange() {
+        let final = stage(5, steps: Monster.stepsForNewEgg)
+        let more = settled(final, steps: Monster.stepsForNewEgg + 3_000)
         let before = WidgetSnapshot(state: final, now: t0)
         let after = WidgetSnapshot(state: more, now: t0)
         #expect(after.totalCreditedSteps > before.totalCreditedSteps)
@@ -168,7 +168,54 @@ struct WidgetDisplayRulesTests {
         #expect(WidgetSnapshot(state: enrolledEgg(), now: t0).progress == .hatch(remaining: Monster.stepsToHatch))
         let baby = WidgetSnapshot(state: stage(0, steps: 1_000), now: t0)
         #expect(baby.progress == .evolution(remaining: EvolutionCard.requiredSteps(stage: 1) - 1_000))
-        #expect(WidgetSnapshot(state: stage(5), now: t0).progress == .finalStage)
+        #expect(WidgetSnapshot(state: stage(5), now: t0).progress == .newEgg(remaining: 10_000))
+    }
+
+    @Test func finalStageProgressAroundTheNewEggThreshold() {
+        #expect(WidgetSnapshot(state: stage(5, steps: 74_999), now: t0).progress == .evolution(remaining: 1))
+        #expect(WidgetSnapshot(state: stage(5, steps: 80_000), now: t0).progress == .newEgg(remaining: 5_000))
+        #expect(WidgetSnapshot(state: stage(5, steps: 84_999), now: t0).progress == .newEgg(remaining: 1))
+        #expect(WidgetSnapshot(state: stage(5, steps: 85_000), now: t0).progress == .newEggReady)
+        #expect(WidgetSnapshot(state: stage(5, steps: 90_000), now: t0).progress == .newEggReady)
+    }
+
+    @Test func copyWrittenBeforeNewEggRuleStillShowsProgress() throws {
+        // Last stage with no target (older copy): remaining is worked out from the steps.
+        let json = """
+        {"schemaVersion":1,"monsterId":"00000000-0000-0000-0000-000000000001","speciesId":"x","name":"X",
+         "stage":5,"isEgg":false,"totalCreditedSteps":80000,"revision":1,"updatedAt":0}
+        """
+        let old = try JSONDecoder().decode(WidgetSnapshot.self, from: Data(json.utf8))
+        #expect(old.nextRequiredSteps == nil)
+        #expect(old.progress == .newEgg(remaining: 5_000))
+        // It differs from a fresh copy, so the app rewrites it.
+        let fresh = WidgetSnapshot(state: stage(5, steps: 80_000), now: t0)
+        #expect(fresh.nextRequiredSteps == Monster.stepsForNewEgg)
+    }
+
+    @Test func reachingNewEggReadyReloadsAtOnceInTheBackground() {
+        let before = WidgetSnapshot(state: stage(5, steps: 84_000), now: t0)
+        let after = WidgetSnapshot(state: stage(5, steps: Monster.stepsForNewEgg), now: t0)
+        #expect(before.progress == .newEgg(remaining: 1_000) && after.progress == .newEggReady)
+        #expect(!after.sameLook(as: before))
+        #expect(WidgetReloadPolicy.shouldReload(previous: before, next: after, foreground: false,
+                                                lastReload: t0, now: t0.addingTimeInterval(1)))
+        // Counting down within the same kind is still a step-only change.
+        let nearer = WidgetSnapshot(state: stage(5, steps: 84_500), now: t0)
+        #expect(nearer.sameLook(as: before))
+        #expect(!WidgetReloadPolicy.shouldReload(previous: before, next: nearer, foreground: false,
+                                                 lastReload: t0, now: t0.addingTimeInterval(1)))
+    }
+
+    @Test func replacingThePartnerChangesTheLook() {
+        var final = stage(5, steps: Monster.stepsForNewEgg)
+        let before = WidgetSnapshot(state: final, now: t0)
+        let applied = final.startNewEgg(target: final.monster.id, at: t0, newMonsterId: testPartnerId(501))
+        #expect(applied)
+        let after = WidgetSnapshot(state: final, now: t0)
+        #expect(!after.sameLook(as: before))
+        #expect(WidgetReloadPolicy.shouldReload(previous: before, next: after, foreground: false,
+                                                lastReload: t0, now: t0.addingTimeInterval(1)))
     }
 
     @Test func unknownStageIsNeverShownAsFinal() throws {

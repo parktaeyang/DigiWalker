@@ -18,10 +18,11 @@ import Testing
                         monster: state.monster, todaySteps: nil, observedAt: nil, timeZone: .gmt, dex: dex)
     }
 
-    @Test func publishesV3WithDexAndCard() throws {
+    @Test func publishesV4WithDexCardAndGeneration() throws {
         let state = hatched()
         let snapshot = state.snapshot
-        #expect(snapshot.schemaVersion == 3)
+        #expect(snapshot.schemaVersion == 4)
+        #expect(snapshot.generation == 0)
         #expect(snapshot.items == state.itemSummaries)
         #expect(snapshot.dex == state.dex)
         #expect(snapshot.monster.cardId == state.monster.cardId)
@@ -32,7 +33,7 @@ import Testing
 
     @Test func rejectsFutureVersion() {
         let state = hatched()
-        #expect(!v2(state, dex: state.dex, version: 4).supersedes(nil))
+        #expect(!v2(state, dex: state.dex, version: 5).supersedes(nil))
         #expect(!v2(state, dex: state.dex, version: 0).supersedes(nil))
     }
 
@@ -164,13 +165,11 @@ import Testing
         #expect(state.monster.id == id)
         #expect(state.monster.cardId == "gabu_ex")
         #expect(state.monster.speciesId == "punimon")
-        #expect(state.monster.experience == 60)
         #expect(state.monster.totalCreditedSteps == 600)
         #expect(state.dex.map(\.speciesId) == ["digitama", "punimon"])
         #expect(state.dex.map(\.cardId) == [nil, "gabu_ex"])
         #expect(state.dex.map(\.firstMetSteps) == [0, 500])
         #expect(state.ledgers.values.map(\.creditedSteps) == [600])
-        #expect(state.ledgers.values.map(\.creditedXP) == [60])
 
         let snapshot = try JSONDecoder().decode(MonsterSnapshot.self, from: Data(LegacyFixtures.gabuPunimonSnapshotV2.utf8))
         #expect(snapshot.supersedes(nil))
@@ -180,7 +179,7 @@ import Testing
         #expect(snapshot.dex == state.dex)
         // The watch now publishes v3; the stored v2 snapshot stays valid and carries no items.
         #expect(snapshot.items == nil)
-        #expect(state.snapshot.schemaVersion == 3)
+        #expect(state.snapshot.schemaVersion == MonsterSnapshot.currentSchemaVersion)
         // Same partner and revision: the v3 upgrade replaces the cached v2, never the other way round.
         #expect(state.snapshot.revision == snapshot.revision)
         #expect(state.snapshot.supersedes(snapshot))
@@ -209,8 +208,8 @@ import Testing
         #expect(state.dex.allSatisfy { $0.cardId == nil || $0.cardId == "agu_ex" })
     }
 
-    @Test func newCardMonsterSnapshotIsAcceptedAtSchemaV3() throws {
-        #expect(MonsterSnapshot.currentSchemaVersion == 3)
+    @Test func newCardMonsterSnapshotIsAcceptedAtCurrentSchema() throws {
+        #expect(MonsterSnapshot.currentSchemaVersion == 4)
         var found = false
         for seed in 0..<200 as Range<UInt64> {
             var state = GameState.fixedEgg(now: start)
@@ -219,7 +218,7 @@ import Testing
             state.settle(day: start, steps: 12_000, distance: 10, using: &generator)
             guard state.monster.cardId == "louwe_ex" || state.monster.cardId == "wolf_ex" else { continue }
             let snapshot = state.snapshot
-            #expect(snapshot.schemaVersion == 3)
+            #expect(snapshot.schemaVersion == 4)
             #expect(snapshot.supersedes(nil))
             let decoded = try JSONDecoder().decode(MonsterSnapshot.self, from: JSONEncoder().encode(snapshot))
             #expect(decoded == snapshot)

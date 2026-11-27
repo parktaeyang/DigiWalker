@@ -1,6 +1,6 @@
 import Foundation
 
-/// An evolution item (crest, digimental, ...). Items are never consumed; owning one only unlocks evolutions.
+/// An evolution item (crest, digimental, ...). Owning one unlocks evolutions; a locked species picked by random evolution consumes one.
 public struct ItemInfo: Equatable, Sendable {
     public enum Category: String, Equatable, Sendable, Codable { case crest, digimental, other }
 
