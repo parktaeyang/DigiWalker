@@ -61,7 +61,7 @@ struct ItemView: View {
                     ForEach(section.rows) { ItemRowView(row: $0, synced: model.synced) }
                 }
             }
-            Text("\(ItemDrop.stepsPerSegment.formatted())걸음마다 20% 확률로 아이템을 하나 찾아요. 아이템은 사라지지 않고, 이름은 임시예요.")
+            Text("\(ItemDrop.stepsPerSegment.formatted())걸음마다 20% 확률로 아이템을 하나 찾아요. 잠금 진화에 쓰면 1개가 사라져요. 이름은 임시예요.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
         .navigationTitle(model.synced ? "아이템 · \(model.ownedKinds) / \(model.totalKinds)" : "아이템")

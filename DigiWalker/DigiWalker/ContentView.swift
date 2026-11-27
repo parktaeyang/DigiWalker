@@ -3,6 +3,9 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var sync: PhoneSyncService
+    @State private var confirmingNewEgg = false
+    /// The partner the dialog was opened for; the request goes to this one even if the cache has changed since.
+    @State private var newEggTarget: UUID?
 
     var body: some View {
         NavigationStack {
@@ -16,7 +19,10 @@ struct ContentView: View {
                             if let card = snapshot.monster.cardId, let title = DexModel.cardTitles[card] {
                                 Text(title).font(.caption).foregroundStyle(.secondary)
                             }
-                            PartnerGrowthView(monster: snapshot.monster)
+                            let newEgg = sync.newEggStatus
+                            PartnerGrowthView(monster: snapshot.monster, offersNewEgg: Self.offersNewEgg(snapshot))
+                            NewEggControls(status: newEgg, open: { newEggTarget = snapshot.monster.id; confirmingNewEgg = true },
+                                           cancel: { sync.cancelNewEggRequest() })
                         }
                         .frame(maxWidth: .infinity)
                         let dex = DexModel(snapshot: snapshot)
@@ -44,6 +50,78 @@ struct ContentView: View {
                 Text(sync.status).font(.footnote).foregroundStyle(.secondary)
             }
             .navigationTitle("내 파트너")
+            .confirmationDialog("정말 새 알을 키울까요?", isPresented: $confirmingNewEgg, titleVisibility: .visible) {
+                Button("새 알 키우기", role: .destructive) {
+                    if let target = newEggTarget { sync.requestNewEgg(target: target) }
+                    newEggTarget = nil
+                }
+                Button("취소", role: .cancel) { newEggTarget = nil }
+            } message: {
+                if let name = sync.cache?.snapshot.monster.name, Self.dialogStillValid(target: newEggTarget, cached: sync.cache?.snapshot.monster.id) {
+                    Text("\(name)\(KoreanParticle.topic(name)) 도감에 남습니다")
+                }
+            }
+            .onChange(of: sync.cache?.snapshot.monster.id) { _, cachedId in
+                if !Self.dialogStillValid(target: newEggTarget, cached: cachedId) {
+                    confirmingNewEgg = false
+                    newEggTarget = nil
+                }
+            }
+        }
+    }
+
+    /// False once the cache shows another partner than the one the dialog was opened for.
+    static func dialogStillValid(target: UUID?, cached: UUID?) -> Bool {
+        target != nil && target == cached
+    }
+
+    /// Only a v4 cache comes from a watch that takes new-egg requests; below that neither the hint nor the
+    /// countdown to a new egg is shown.
+    static func offersNewEgg(_ snapshot: MonsterSnapshot) -> Bool {
+        snapshot.schemaVersion >= 4
+    }
+}
+
+/// The small button under the partner, or the waiting note with a way to cancel. Shows nothing when no new egg is possible.
+struct NewEggControls: View {
+    let status: NewEggRequestStatus
+    let open: () -> Void
+    let cancel: () -> Void
+
+    var body: some View {
+        switch status {
+        case .hidden:
+            EmptyView()
+        case .needsWatchUpdate:
+            Text("워치 앱을 업데이트해 주세요").font(.caption).foregroundStyle(.secondary)
+        case .available:
+            Button("새 알 키우기", action: open)
+                .buttonStyle(.bordered).controlSize(.small)
+                .accessibilityIdentifier("newEggButton")
+        case .notConnected:
+            Text(NewEggControls.message(for: status)).font(.caption).foregroundStyle(.secondary)
+        case .queued, .delivered, .failed:
+            VStack(spacing: 4) {
+                Text(NewEggControls.message(for: status)).font(.caption).foregroundStyle(.secondary)
+                Button(NewEggControls.cancelTitle(for: status), role: .destructive, action: cancel)
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .accessibilityIdentifier("cancelNewEggButton")
+            }
+        }
+    }
+
+    /// Only a queued request can still be stopped; later the button just clears the note on the iPhone.
+    static func cancelTitle(for status: NewEggRequestStatus) -> String {
+        status == .queued ? "요청 취소" : "대기 표시 지우기"
+    }
+
+    static func message(for status: NewEggRequestStatus) -> String {
+        switch status {
+        case .queued: "워치에 연결되면 시작됩니다"
+        case .delivered: "이미 워치에 전달됐어요. 워치에서 새 알이 시작될 수 있어요"
+        case .failed: "요청을 보내지 못했어요. 대기 표시를 지운 뒤 다시 시도해 주세요"
+        case .notConnected: "워치와 연결을 확인해 주세요"
+        case .hidden, .needsWatchUpdate, .available: ""
         }
     }
 }
