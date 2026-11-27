@@ -190,3 +190,35 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 ### 검증한 환경
 - `swift test --package-path Packages/DigiWalkerCore` 174개 통과(10회 반복 모두 통과, Xcode 27.2, macOS Mac 호스트). 워치 앱 테스트 75개를 `-test-iterations 15`로 반복해 1,125건 모두 통과(Apple Watch Series 11 46mm, watchOS 27.2 시뮬레이터, build-for-testing + test-without-building `-only-testing:"DigiWalker Watch AppTests"`). iPhone `DigiWalkerTests` 23개 통과(iPhone 17, iOS 27.2 시뮬레이터). 워치 실기기용 서명 빌드(본인 워치 지정, `-allowProvisioningUpdates`) 성공, 설치하지 않았다. 무작위 UUID 때문에 20% 확률로 아이템 이벤트가 끼어들던 간헐 실패는 테스트의 파트너 ID를 고정해 없앴다.
 - **미검증:** 실기기에서의 획득 알림·진동(20%라 바로 못 볼 수 있어 시뮬레이터 테스트로 대신), 소급 없이 기존 실기기 파일이 읽히는지, 워치·iPhone 화면 육안 확인(스크린샷 미촬영), 5,000걸음 경계를 넘긴 뒤 실제 추첨, 25종 가안 이름의 공식 한국어명, v3 전송 실기기 확인.
+
+## 새 알 키우기(환생)·레벨 제거·아이템 소모 · 2026-11-27
+
+계획서: `local-notes/plans/20261127-rebirth-new-egg.md`, 요구사항: `local-notes/기능/새알키우기-환생.md`. 코어·워치·iPhone을 구현했고 실기기 확인은 아직 하지 않았다.
+
+### 구현
+- **레벨·경험치 제거:** `ExperienceCalculator`·`Monster.experience/level`·`DailyActivityLedger.creditedXP`를 없앴다. 옛 상태 파일·캐시·pending 파일의 `experience`·`creditedXP` 키는 읽을 때 무시한다. 화면에는 "다음 진화까지 N걸음" 진행 바(궁극체 뒤에는 "새 알까지 N걸음", 85,000 이후 "새 알을 키울 수 있어요")를 둔다.
+- **아이템 자동 소모:** 잠금 종이 무작위 진화로 선택되면 필요한 아이템 1개를 소모하고 `itemUses`(append-only)에 기록한다. 보유 수는 획득 − 사용이며 요약(`ItemSummary.count`)도 현재 개수다. 기존 보유량은 그대로이고 소급 소모는 없다. 다음 개체에도 유지한다.
+- **새 알:** 궁극체 개체가 누적 85,000걸음(`Monster.stepsForNewEgg`)이 되면 워치가 알림을 한 번만 보낸다(정산에서 경계를 넘는 순간만; 기능 설치 전에 넘긴 개체는 알림 없이 버튼만). 워치·iPhone 디지몬 아래 '새 알 키우기' 버튼 → "정말 새 알을 키울까요? ○○몬은 도감에 남습니다" 확인 → 실행. 새 개체는 새 UUID의 디지타마, 0걸음, 아이템 구간 0부터. 부화 카드는 직전 카드를 뺀 10장 중 개체 ID 시드로 결정적으로 고른다(2세대부터, 첫 세대는 기존 방식). 도감·아이템·사용 기록·정산 원장은 유지하고, 환생 시각 이후 걸음만 새 개체에 지급한다(환생 날의 이전 원장은 `priorPartnerLedgers`로 옮겨 재지급 방지).
+- **iPhone → 워치 요청:** iPhone이 `NewEggRequest`를 `pending-new-egg.json`에 먼저 저장하고 `WCSession.transferUserInfo`로 보낸다. 워치는 정산과 같은 직렬 체인에서 대상 개체 ID가 현재 개체일 때만 적용하므로 중복·늦은 요청은 무시된다. iPhone은 "워치에 연결되면 시작됩니다"(큐 대기) / "워치에서 새 알을 준비하고 있어요"(전달됨)를 표시하고, 다른 개체 ID의 스냅샷을 받으면 대기를 해제한다. 대기 중(queued)에서만 "요청 취소"가 큐의 전송을 취소하고 대기를 지운다. 이미 전달된 뒤(delivered)·실패 뒤에는 "대기 표시 지우기"로 바뀌며 iPhone의 표시만 지운다: 전달된 요청은 취소되지 않아 워치에서 새 알이 시작될 수 있고, 화면에 그렇게 안내한다. 워치와 활성화·페어링·앱 설치가 확인되지 않으면 요청을 저장하거나 보내지 않고 "워치와 연결을 확인해 주세요"를 보인다. 같은 요청의 전달 후 실패 보고(delivered→failed)도 반영한다. 기록 파일을 지우지 못하면 `null`로 덮어쓰고, 그것도 실패하면 메모리 상태를 유지한다. v3 이하 캐시(옛 워치)에서는 버튼을 숨기고 "워치 앱을 업데이트해 주세요"를 보인다.
+- **스냅샷 v4:** `generation` 추가, 개체 교체는 `(createdAt, generation)`으로 판정(환생은 같은 `createdAt`, 높은 세대). 아이템 요약은 현재 개수. **iPhone과 워치 앱을 함께 설치해야 한다**(워치만 올리면 옛 iPhone이 v4를 거부하고, iPhone만 올리면 v3 캐시가 보이며 버튼은 숨겨진다).
+- 환생하면 이전 개체의 "새 알" 안내(pending 큐·알림 센터)만 지우고 부화·진화·아이템 기록은 남긴다. 위젯 사본은 개체 ID가 바뀌어 즉시 다시 쓴다. 컴플리케이션은 "새 알까지 N걸음"/"새 알 준비"를 보인다.
+
+### 검증한 환경
+- 검증 일시: 2026-11-27, Xcode 27.2, macOS Mac 호스트. `swift test --package-path Packages/DigiWalkerCore` 225개 통과. iPhone `DigiWalkerTests` 30개 통과(이번에 7개 추가). 워치 앱 테스트 100개 통과(3회 실행 중 1회 `mergeAfterUnreadablePendingFileIsSaved`가 간헐 실패했다. 원인: 테스트의 `donor`와 `rig`가 같은 고정 개체 ID를 써서, 첫 부화가 시스템 난수로 같은 종을 고르면(약 10.7%) 두 알림 이벤트가 같아져 병합되어 개수가 1이 됐다. 수정: `donor`에 다른 개체 ID를 써서 이벤트가 항상 달라지게 했다. 테스트만 바뀌었다).
+- iPhone `DigiWalkerTests`(iPhone 17, iOS 27.2 시뮬레이터)에 새 알 요청 상태 판정(대기·전달됨·실패·해제, v3 캐시 버튼 숨김, 현재 개수 표시, `experience` 키 무시) 테스트를 추가했다.
+- 워치 앱 테스트는 Apple Watch Series 12 46mm 시뮬레이터에서 build-for-testing + test-without-building으로 실행했다. `generic/platform=watchOS`와 `generic/platform=iOS` 빌드는 `CODE_SIGNING_ALLOWED=NO`로 확인했다(arm64_32 컴파일 포함, 설치 안 함).
+
+### 알려진 제약
+- **저장 실패 후 iPhone 요청 재시도 없음:** `transferUserInfo`는 한 번만 전달된다. 워치가 커밋에 실패하면 요청은 워치 메모리에서만 사라지고 iPhone은 다른 개체 ID를 받을 때까지 대기를 표시한다. "대기 표시 지우기" 후 다시 요청한다.
+- **환생 기준점과 시계 역행:** 환생 시각은 `max(요청 시각, creditedThrough, partnerSince, enrolledAt)`(+옛 파일 폴백으로 `observedAt`)이다. `creditedThrough`는 걸음을 정산한 조회 구간의 가장 늦은 끝으로 줄지 않으며(옛 파일은 nil), 시계를 되돌려 `observedAt`이 내려가도 이미 지급한 구간을 새 개체에 다시 주지 않는다.
+- **카드 없는 레거시 개체 버튼 없음:** 카드가 없거나 모르는 종(stage 없음)의 개체는 85,000걸음을 넘어도 새 알 버튼이 없다(`canStartNewEgg == false`).
+- **v4라 iPhone·워치 동시 설치 필수**(앱 삭제 없이 덮어쓰기. 12-02 무료 계정 재설치와 친구 기기 2대 포함).
+- **iPhone의 "전달됨" 판정:** 앱이 꺼진 사이 전송이 끝나 완료 콜백을 놓치면, 앱 시작 때 큐에 없다는 이유로 "전달됨"으로 본다. 실제로 워치가 받았는지는 새 개체 스냅샷으로만 확정된다.
+- **85,000 알림 pending 기록:** 알림은 게임 파일 커밋 뒤 별도 pending 파일에 쓰므로 그 사이 앱이 종료되면 알림이 빠질 수 있다(버튼은 항상 표시되어 기능은 유지; 사용자 결정(2026-11-27): 현행 유지). 환생 후 pending 제거에 실패하면 이전 개체의 offer가 다시 뜰 수 있으나 대상 ID가 일치하지 않아 무시된다.
+- **iPhone 취소와 재전송:** 취소는 시스템 큐에서 해당 전송을 찾아 실제로 취소했을 때만 기록을 지운다. 찾지 못하거나 세션이 활성이 아니면 이미 워치로 갔을 수 있어 "전달됨"으로 남기고 "대기 표시 지우기"만 가능하다. 전송 직전 `preparing`으로 저장하므로 그 사이 종료되면 다음 활성화 때 같은 요청 ID·대상으로 다시 보낸다(워치는 대상 ID 기준 멱등).
+
+### 미검증(실기기 필요)
+- 85,000걸음 도달 시 워치 알림과 알림 동작 버튼("새 알 키우기"/"궁극체 유지")이 long-look에서 실제로 보이는지, `.foreground` 동작으로 앱이 열려 확인 창이 뜨는지.
+- 환생 실행, iPhone 요청 → 워치 적용, 연결 끊김 중 대기 표시와 재연결 후 전달, `transferUserInfo`로 워치 앱이 백그라운드에서 깨어나는 시점과 빈도(`WKWatchConnectivityRefreshBackgroundTask` 처리).
+- 기존 실기기 파일(경험치 포함, `itemUses`·`generation` 없음)이 손상 판정 없이 읽히는지, 화면에서 Lv/XP가 사라졌는지, 컴플리케이션 문구와 개체 교체 시 갱신.
+- iPhone 화면(버튼·확인창·대기 문구) 육안 확인(스크린샷 미촬영). 85,000걸음은 시뮬레이터 단위 테스트로 대신했다.
