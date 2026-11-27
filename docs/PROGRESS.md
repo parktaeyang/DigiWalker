@@ -222,3 +222,41 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - 환생 실행, iPhone 요청 → 워치 적용, 연결 끊김 중 대기 표시와 재연결 후 전달, `transferUserInfo`로 워치 앱이 백그라운드에서 깨어나는 시점과 빈도(`WKWatchConnectivityRefreshBackgroundTask` 처리).
 - 기존 실기기 파일(경험치 포함, `itemUses`·`generation` 없음)이 손상 판정 없이 읽히는지, 화면에서 Lv/XP가 사라졌는지, 컴플리케이션 문구와 개체 교체 시 갱신.
 - iPhone 화면(버튼·확인창·대기 문구) 육안 확인(스크린샷 미촬영). 85,000걸음은 시뮬레이터 단위 테스트로 대신했다.
+
+## iPhone 위젯(홈 화면 small·잠금 화면 3종) · 2026-11-28
+
+계획서 `local-notes/plans/20261127-iphone-widget.md`의 1~6단계. 실기기 설치와 확인(7단계)은 하지 않았다.
+
+### 구조
+- **확장 타깃:** `DigiWalker Phone Widgets`(번들 ID `ty.park.DigiWalker.widgets`, iOS 18.0). 지원 크기는 systemSmall, accessoryCircular, accessoryRectangular, accessoryInline이고 kind는 `WidgetSnapshot.widgetKind`다. 위젯은 사본을 읽기만 하고 걸음을 계산하지 않는다.
+- **`DigiWalker/WidgetShared/`:** 워치 위젯과 iPhone 위젯 두 확장만 컴파일하는 공용 코드(`PartnerEntry`, `PartnerProvider`, 문구 extension, `PartnerSprite`). 워치 위젯에서 옮겼고 동작은 같다.
+- **코어:** `WidgetSnapshot(snapshot:receivedAt:)`로 iPhone 캐시에서 사본을 만든다(`updatedAt` = 수신 시각). 선택 필드 `offersNewEgg`가 false(스냅샷 v3 이하 캐시)이고 궁극체이면 새 알 카운트다운 대신 "최종 단계"(`Progress.finalStage`)를 보인다. 워치가 쓰는 사본에는 이 키가 없다.
+- **publisher:** `PhoneWidgetPublisher`가 캐시 저장에 성공한 뒤(`PhoneSyncService.receive`)와 앱이 활성화될 때(`scenePhase == .active`, `refreshWidget()`) iPhone의 App Group 컨테이너에 `widget-snapshot.json`을 원자적으로 쓴다. 쓰기 실패는 `NSLog`만 남기고 캐시·상태·새 알 요청에 영향이 없다. 캐시 저장이 실패하거나 스냅샷이 거부되면 사본을 건드리지 않는다. 단위 테스트 실행 중에는 `InertPhoneWidgetPublisher`를 쓴다.
+- **리로드 규칙:** 사본이 기존과 완전히 같으면(수신 시각 포함) 쓰지 않는다. 리로드 여부는 사본을 쓰지 않았더라도 마지막 리로드 기록(`phone-widget-reload.json`)과 비교해 판단한다. 포그라운드: 마지막 리로드 이후 바뀐 것이 있으면 항상 리로드. 백그라운드: `WidgetReloadPolicy`(종·단계·개체 변경은 즉시, 걸음만 바뀌면 30분 간격)에 더해, 수신 시각이 더 새로워졌고 30분이 지났으면 리로드. 기록 시각이 현재보다 미래(시계를 되돌림)이면 기록을 기준으로 보지 않고 한 번 리로드한 뒤 기준을 새로 잡는다. 기록 저장에 실패하면 중복 리로드 쪽으로 기운다(의도). 이 규칙은 iPhone publisher 안에만 있고 워치 `WidgetReloadPolicy`는 바뀌지 않았다.
+- **개인정보:** 걸음에서 나온 문구(rectangular·small의 진행 문구, inline은 이름을 포함한 문구 전체)에 `.privacySensitive()`를 지정했다(시스템이 가림을 요청할 때 가려진다. 실제로 언제 가려지는지는 미검증). 도트는 가리지 않고, rectangular·small의 이름도 가리지 않는다. circular의 접근성 라벨은 이름만 쓴다. 유지 여부는 실기기에서 보고 정한다(사용자 결정 2026-11-28).
+
+### 갱신 한계
+- 위젯은 **iPhone 앱이 워치 스냅샷을 받았을 때만** 바뀐다. 워치는 `updateApplicationContext`로 보내고, 꺼진 iPhone 앱이 이것으로 백그라운드 실행되지는 않는다고 알고 있다(실기기 미확인). 그래서 실제로는 앱을 열었을 때나 앱이 메모리에 있을 때 갱신되고 워치의 최신 걸음보다 늦을 수 있다. 위젯 설명에도 이 한계를 적었다. 동기화 방식 변경은 이번 범위 밖이다.
+- small 위젯은 수신 시각을 항상 **"M/d HH:mm 수신"**(고정 24시간제)으로 보인다. 계획 F의 "오늘이 아니면 날짜"에서 바꾼 이유: 타임라인이 `.never`라 위젯이 스스로 다시 그려지지 않으므로 "오늘인지" 판정이 어제 값으로 굳는다. 12시간제 기기에서는 시각 서식이 06시와 18시를 구분하지 못할 수도 있어 `en_US_POSIX` 24시간 서식으로 고정했다.
+
+### 서명 요구사항 (이전 기록과 달라진 점)
+- 위 "워치 페이스 컴플리케이션" 절의 "iPhone 앱에는 App Group이 없다" 기록은 **이제 맞지 않는다.** iPhone 앱(`DigiWalker.entitlements`)과 위젯 확장(`DigiWalker Phone Widgets.entitlements`) 모두에 App Group `group.ty.park.DigiWalker`가 새로 생겼다. iPhone 컨테이너와 워치 컨테이너는 기기마다 따로라 같은 식별자를 써도 파일이 섞이지 않는다.
+- 새 App ID `ty.park.DigiWalker.widgets`가 필요하다(무료 팀은 7일에 10개 한도). iPhone 앱 프로파일도 새로 만들어졌다.
+- **프로파일 만료(서명 빌드 기준, 설치 전):** iPhone 앱 2026-12-04 23:48 KST, iPhone 위젯 확장 2026-12-04 23:48 KST(앱 14:48:34Z, 확장 14:48:30Z). 두 프로파일 모두 application-groups `group.ty.park.DigiWalker`와 ProvisionedDevices 4대가 있다. 설치 전이므로 설치 후 기기에 실제 적용된 만료일은 다시 기록해야 한다. 워치 쪽 만료(2026-12-03 20:06 KST)는 그대로다. 이 iPhone 빌드를 설치하기 전까지 기기의 iPhone 앱 만료는 2026-12-02 09:35 KST(이전 기록)다.
+
+### 위젯 넣는 방법(예정, 실기기 미확인)
+- 홈 화면을 길게 눌러 + → DigiWalker → small. 잠금 화면은 길게 눌러 사용자화 → 위젯 칸에서 DigiWalker(원형·직사각형·한 줄).
+
+### 검증한 환경
+- 코어 `swift test` 238개 통과.
+- iPhone 17 시뮬레이터 `DigiWalkerTests` 통과(`PhoneWidgetPublisherTests` 13개 포함: 첫 쓰기, 동일 캐시 생략, 포그라운드 수신 시각 변경, 백그라운드 30분 간격, 보류된 리로드의 포그라운드 실행, 수신 시각만 바뀐 경우, 종 변경 즉시 리로드, 손상된 사본, 컨테이너 없음, 쓰기 실패, 미래 기록, 기록 파일 없음 등).
+- 워치 시뮬레이터(Series 11 46mm) `DigiWalker Watch AppTests` 통과(회귀).
+- `generic/platform=iOS -allowProvisioningUpdates` 서명 빌드 성공. 앱과 확장 양쪽의 엔타이틀먼트에 App Group이 있고 확장 번들에 `PrivateAssets`가 들어 있다. 설치하지 않았다.
+
+### 미검증
+- 실기기와 시뮬레이터 화면 확인 전부(스크린샷 없음): 도트 크기와 슬롯(72×64, 44×44, padding 6), 각 상태 문구, 다크·틴트 홈 화면.
+- **잠금 화면 vibrant(단색) 렌더링:** 도트가 실루엣으로 보일 수 있다.
+- **포그라운드 리로드 예산:** "포그라운드 앱의 리로드 요청은 예산에 들어가지 않는다"는 Apple 문서 기반이며 원문을 다시 확인하지 않았다.
+- **백그라운드 전달 지연:** 앱을 열지 않았을 때 위젯이 얼마나 늦는지.
+- 잠금 상태(재부팅 후 첫 잠금 해제 전)에서 App Group 파일 읽기, 위젯 확장 메모리 한도.
+- `.privacySensitive()`가 잠금 화면에서 실제로 가려지는지.
