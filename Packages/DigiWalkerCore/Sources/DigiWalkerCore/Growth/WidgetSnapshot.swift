@@ -1,11 +1,12 @@
 import Foundation
 
-/// Small display-only copy of the partner for the watch face complication. The watch app writes it after a
-/// settlement; the widget only reads it. It never feeds back into growth rules or the iPhone snapshot.
+/// Small display-only copy of the partner for widgets (the watch face complication and the iPhone widget). The watch
+/// app writes its copy after a settlement; the iPhone app writes its own from the cached watch snapshot. Widgets only
+/// read it. It never feeds back into growth rules or the iPhone snapshot.
 public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public static let currentSchemaVersion = 1
     public static let supportedSchemaVersions: Set<Int> = [1]
-    /// Shared container of the watch app and the widget extension.
+    /// Shared container of an app and its widget extension (the watch and the iPhone each have their own).
     public static let appGroupIdentifier = "group.ty.park.DigiWalker"
     public static let fileName = "widget-snapshot.json"
     public static let widgetKind = "DigiWalkerPartnerWidget"
@@ -21,10 +22,24 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     /// A copy written before the new egg rule has nil at the last stage; `remainingSteps` covers that.
     public let nextRequiredSteps: Int?
     public let revision: Int
+    /// False when the copy comes from an iPhone cache of a watch app that takes no new-egg request (snapshot
+    /// before v4): the last stage then says "final stage" instead of counting down to a new egg. Nil (a copy the
+    /// watch wrote, or one written before this field) means true.
+    public let offersNewEgg: Bool?
+    /// When the watch app wrote the copy; on the iPhone, when the app received the snapshot.
     public let updatedAt: Date
 
     public init(state: GameState, now: Date) {
-        let monster = state.monster
+        self.init(monster: state.monster, revision: state.revision, offersNewEgg: nil, updatedAt: now)
+    }
+
+    /// The iPhone copy of a validated cache entry. `updatedAt` is the time the iPhone received it.
+    public init(snapshot: MonsterSnapshot, receivedAt: Date) {
+        self.init(monster: snapshot.monster, revision: snapshot.revision, offersNewEgg: snapshot.schemaVersion >= 4,
+                  updatedAt: receivedAt)
+    }
+
+    private init(monster: Monster, revision: Int, offersNewEgg: Bool?, updatedAt: Date) {
         schemaVersion = Self.currentSchemaVersion
         monsterId = monster.id
         speciesId = monster.speciesId
@@ -41,8 +56,9 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         } else {
             nextRequiredSteps = nil
         }
-        revision = state.revision
-        updatedAt = now
+        self.revision = revision
+        self.offersNewEgg = offersNewEgg
+        self.updatedAt = updatedAt
     }
 
     /// Steps left until the next hatch, evolution or new egg, never negative. Nil when the stage is unknown.
@@ -61,6 +77,8 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         case newEgg(remaining: Int)
         /// Last stage with enough steps to start a new egg.
         case newEggReady
+        /// Last stage of a copy whose watch takes no new-egg request: no countdown is promised.
+        case finalStage
         /// No next stage and not the last one: the stage is unknown, so nothing is claimed.
         case unknown
 
@@ -68,7 +86,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         func sameKind(as other: Self) -> Bool {
             switch (self, other) {
             case (.hatch, .hatch), (.evolution, .evolution), (.newEgg, .newEgg), (.newEggReady, .newEggReady),
-                 (.unknown, .unknown): true
+                 (.finalStage, .finalStage), (.unknown, .unknown): true
             default: false
             }
         }
@@ -78,15 +96,21 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         if isEgg { return .hatch(remaining: remainingSteps ?? 0) }
         guard let remainingSteps else { return .unknown }
         if stage == EvolutionCard.stageCount - 1 {
+            if offersNewEgg == false { return .finalStage }
             return remainingSteps > 0 ? .newEgg(remaining: remainingSteps) : .newEggReady
         }
         return .evolution(remaining: remainingSteps)
     }
 
     /// True if a widget would draw the same thing: the same look and the same remaining steps. Steps counted
-    /// once a new egg is possible show nowhere, so they do not count. Ignores `revision` and `updatedAt`.
+    /// once a new egg is possible, or at the final stage (no countdown), show nowhere, so they do not count.
+    /// Ignores `revision` and `updatedAt` (the iPhone small widget shows the latter, so its publisher compares
+    /// whole copies instead).
     public func sameDisplay(as other: WidgetSnapshot) -> Bool {
-        sameLook(as: other) && remainingSteps == other.remainingSteps
+        guard sameLook(as: other) else { return false }
+        // The final-stage note shows no steps, so counting on changes nothing visible.
+        if progress == .finalStage { return true }
+        return remainingSteps == other.remainingSteps
     }
 
     /// True if this identity or look changes (not just the step count).

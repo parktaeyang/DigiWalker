@@ -239,3 +239,117 @@ struct WidgetTimelineRetryTests {
         #expect((15 * 60...30 * 60).contains(WidgetTimelineRetry.interval))
     }
 }
+
+private let t1 = t0.addingTimeInterval(600)
+
+/// A cache entry as a watch of that schema version would have sent it: v4 is the real snapshot, older versions keep
+/// only what their schema carries (dex from v2, items from v3, generation from v4).
+private func cached(_ state: GameState, version: Int) -> MonsterSnapshot {
+    let full = state.snapshot
+    return MonsterSnapshot(schemaVersion: version, revision: full.revision, createdAt: full.createdAt,
+                           monster: full.monster, todaySteps: full.todaySteps, observedAt: full.observedAt,
+                           timeZone: full.timeZone, dex: version >= 2 ? full.dex : nil,
+                           items: version >= 3 ? full.items : nil, generation: version >= 4 ? full.generation : nil)
+}
+
+struct PhoneWidgetSnapshotTests {
+    private func widget(_ state: GameState, version: Int = 4) -> WidgetSnapshot {
+        let snapshot = cached(state, version: version)
+        // The iPhone only caches (and so only copies) what passes this check.
+        #expect(snapshot.supersedes(nil))
+        return WidgetSnapshot(snapshot: snapshot, receivedAt: t1)
+    }
+
+    @Test func fixturesPassTheCacheValidationOfEveryVersion() {
+        for version in [3, 4] {
+            for state in [enrolledEgg(), stage(0, steps: 1_000), stage(4), stage(5), stage(5, steps: 90_000)] {
+                #expect(cached(state, version: version).supersedes(nil))
+            }
+        }
+        #expect(cached(stage(5), version: 4).generation != nil)
+        #expect(cached(stage(5), version: 3).generation == nil)
+        #expect(cached(stage(5), version: 3).dex != nil && cached(stage(5), version: 3).items != nil)
+    }
+
+    @Test func watchCopyJSONHasNoOffersNewEggKey() throws {
+        let data = try JSONEncoder().encode(WidgetSnapshot(state: stage(5), now: t0))
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(object["offersNewEgg"] == nil)
+        let phone = try JSONEncoder().encode(widget(stage(5)))
+        #expect((try #require(JSONSerialization.jsonObject(with: phone) as? [String: Any]))["offersNewEgg"] as? Bool == true)
+    }
+
+    @Test func v4CacheMapsEveryStageToTheWatchRules() {
+        #expect(widget(enrolledEgg()).progress == .hatch(remaining: Monster.stepsToHatch))
+        #expect(widget(stage(0, steps: 1_000)).progress == .evolution(remaining: EvolutionCard.requiredSteps(stage: 1) - 1_000))
+        #expect(widget(stage(5, steps: 84_999)).progress == .newEgg(remaining: 1))
+        #expect(widget(stage(5, steps: 85_000)).progress == .newEggReady)
+        #expect(widget(stage(5, steps: 90_000)).progress == .newEggReady)
+    }
+
+    @Test func v3FinalStageIsFinalStageWithoutCountdown() {
+        #expect(widget(stage(5), version: 3).progress == .finalStage)
+        #expect(widget(stage(5, steps: 90_000), version: 3).progress == .finalStage)
+        #expect(widget(stage(5), version: 3).offersNewEgg == false)
+    }
+
+    @Test func v3EarlierStagesKeepTheirProgress() {
+        #expect(widget(enrolledEgg(), version: 3).progress == .hatch(remaining: Monster.stepsToHatch))
+        let baby = stage(0, steps: 1_000)
+        #expect(widget(baby, version: 3).progress == .evolution(remaining: EvolutionCard.requiredSteps(stage: 1) - 1_000))
+        #expect(widget(stage(4), version: 3).progress == widget(stage(4)).progress)
+    }
+
+    @Test func copiesRevisionAndUsesReceivedAtAsUpdatedAt() {
+        let state = stage(0, steps: 1_000)
+        let copy = widget(state)
+        #expect(copy.revision == state.revision)
+        #expect(copy.updatedAt == t1)
+        #expect(copy.monsterId == state.monster.id)
+        #expect(copy.speciesId == state.monster.speciesId)
+        #expect(copy.totalCreditedSteps == 1_000)
+        #expect(copy.schemaVersion == WidgetSnapshot.currentSchemaVersion)
+        #expect(copy.offersNewEgg == true)
+    }
+
+    @Test func copyWithoutOffersNewEggDecodesAsNilAndKeepsOldBehavior() throws {
+        let json = """
+        {"schemaVersion":1,"monsterId":"00000000-0000-0000-0000-000000000001","speciesId":"x","name":"X",
+         "stage":5,"isEgg":false,"totalCreditedSteps":90000,"nextRequiredSteps":85000,"revision":1,"updatedAt":0}
+        """
+        let old = try JSONDecoder().decode(WidgetSnapshot.self, from: Data(json.utf8))
+        #expect(old.offersNewEgg == nil)
+        #expect(old.progress == .newEggReady)
+    }
+
+    @Test func offersNewEggRoundTrips() throws {
+        for version in [3, 4] {
+            let copy = widget(stage(5), version: version)
+            let decoded = try JSONDecoder().decode(WidgetSnapshot.self, from: JSONEncoder().encode(copy))
+            #expect(decoded == copy)
+        }
+    }
+
+    @Test func watchCopyKeepsTheSameProgressAsBefore() {
+        #expect(WidgetSnapshot(state: stage(5, steps: 80_000), now: t0).offersNewEgg == nil)
+        #expect(WidgetSnapshot(state: stage(5, steps: 80_000), now: t0).progress == .newEgg(remaining: 5_000))
+        #expect(WidgetSnapshot(state: stage(5, steps: 85_000), now: t0).progress == .newEggReady)
+        #expect(WidgetSnapshot(state: stage(2), now: t0).progress == widget(stage(2)).progress)
+    }
+
+    @Test func finalStageCountsAsItsOwnKindForLookAndDisplay() {
+        let v4 = widget(stage(5, steps: 80_000))
+        let v3 = widget(stage(5, steps: 80_000), version: 3)
+        #expect(v3.progress.sameKind(as: .finalStage))
+        #expect(!v3.progress.sameKind(as: v4.progress))
+        #expect(!v3.sameLook(as: v4))
+        #expect(!v3.sameDisplay(as: v4))
+        // Steps counted on at the final stage show nothing.
+        let more = widget(stage(5, steps: 82_000), version: 3)
+        #expect(more.sameLook(as: v3))
+        #expect(more.sameDisplay(as: v3))
+        #expect(!WidgetReloadPolicy.shouldReload(previous: v3, next: more, foreground: true, lastReload: t0, now: t1))
+        // Upgrading the watch changes the look and reloads at once.
+        #expect(WidgetReloadPolicy.shouldReload(previous: v3, next: v4, foreground: false, lastReload: t0, now: t1))
+    }
+}
