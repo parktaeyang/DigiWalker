@@ -16,6 +16,9 @@
 		DA0000000000000000000D04 /* DigiWalker Widgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000D02 /* DigiWalker Widgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DA0000000000000000000E02 /* DigiWalkerCore in Frameworks */ = {isa = PBXBuildFile; productRef = DA0000000000000000000E01 /* DigiWalkerCore */; };
 		DA0000000000000000000E04 /* PrivateAssets in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B04 /* PrivateAssets */; };
+		DA0000000000000000000F04 /* DigiWalker Phone Widgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000F02 /* DigiWalker Phone Widgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DA0000000000000000000F0F /* DigiWalkerCore in Frameworks */ = {isa = PBXBuildFile; productRef = DA0000000000000000000F0E /* DigiWalkerCore */; };
+		DA0000000000000000000F10 /* PrivateAssets in Resources */ = {isa = PBXBuildFile; fileRef = DA0000000000000000000B04 /* PrivateAssets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +64,13 @@
 			remoteGlobalIDString = DA0000000000000000000D01;
 			remoteInfo = "DigiWalker Widgets";
 		};
+		DA0000000000000000000F0A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 185DDB0030B322A400FF148A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DA0000000000000000000F01;
+			remoteInfo = "DigiWalker Phone Widgets";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -86,6 +96,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DA0000000000000000000F05 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				DA0000000000000000000F04 /* DigiWalker Phone Widgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -98,6 +119,7 @@
 		DA0000000000000000000B03 /* StarterPack */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StarterPack; path = ../Assets/StarterPack; sourceTree = "<group>"; };
 		DA0000000000000000000B04 /* PrivateAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PrivateAssets; path = ../PrivateAssets; sourceTree = "<group>"; };
 		DA0000000000000000000D02 /* DigiWalker Widgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "DigiWalker Widgets.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DA0000000000000000000F02 /* DigiWalker Phone Widgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "DigiWalker Phone Widgets.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -139,6 +161,16 @@
 		DA0000000000000000000D03 /* DigiWalker Widgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "DigiWalker Widgets";
+			sourceTree = "<group>";
+		};
+		DA0000000000000000000F03 /* DigiWalker Phone Widgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DigiWalker Phone Widgets";
+			sourceTree = "<group>";
+		};
+		DA0000000000000000000F11 /* WidgetShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WidgetShared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -196,6 +228,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DA0000000000000000000F07 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA0000000000000000000F0F /* DigiWalkerCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -210,6 +250,8 @@
 				185DDB3D30B322A600FF148A /* DigiWalker Watch AppTests */,
 				185DDB4730B322A600FF148A /* DigiWalker Watch AppUITests */,
 				DA0000000000000000000D03 /* DigiWalker Widgets */,
+				DA0000000000000000000F03 /* DigiWalker Phone Widgets */,
+				DA0000000000000000000F11 /* WidgetShared */,
 				DA0000000000000000000B03 /* StarterPack */,
 				DA0000000000000000000B04 /* PrivateAssets */,
 				185DDB0930B322A400FF148A /* Products */,
@@ -226,6 +268,7 @@
 				185DDB3A30B322A600FF148A /* DigiWalker Watch AppTests.xctest */,
 				185DDB4430B322A600FF148A /* DigiWalker Watch AppUITests.xctest */,
 				DA0000000000000000000D02 /* DigiWalker Widgets.appex */,
+				DA0000000000000000000F02 /* DigiWalker Phone Widgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -241,11 +284,13 @@
 				185DDB0530B322A400FF148A /* Frameworks */,
 				185DDB0630B322A400FF148A /* Resources */,
 				185DDB5130B322A600FF148A /* Embed Watch Content */,
+				DA0000000000000000000F05 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				185DDB2E30B322A500FF148A /* PBXTargetDependency */,
+				DA0000000000000000000F09 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				185DDB0A30B322A400FF148A /* DigiWalker */,
@@ -392,6 +437,7 @@
 			fileSystemSynchronizedGroups = (
 				DA0000000000000000000C01 /* PartnerArt */,
 				DA0000000000000000000D03 /* DigiWalker Widgets */,
+				DA0000000000000000000F11 /* WidgetShared */,
 			);
 			name = "DigiWalker Widgets";
 			packageProductDependencies = (
@@ -399,6 +445,31 @@
 			);
 			productName = "DigiWalker Widgets";
 			productReference = DA0000000000000000000D02 /* DigiWalker Widgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		DA0000000000000000000F01 /* DigiWalker Phone Widgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DA0000000000000000000F0B /* Build configuration list for PBXNativeTarget "DigiWalker Phone Widgets" */;
+			buildPhases = (
+				DA0000000000000000000F06 /* Sources */,
+				DA0000000000000000000F07 /* Frameworks */,
+				DA0000000000000000000F08 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				DA0000000000000000000C01 /* PartnerArt */,
+				DA0000000000000000000F03 /* DigiWalker Phone Widgets */,
+				DA0000000000000000000F11 /* WidgetShared */,
+			);
+			name = "DigiWalker Phone Widgets";
+			packageProductDependencies = (
+				DA0000000000000000000F0E /* DigiWalkerCore */,
+			);
+			productName = "DigiWalker Phone Widgets";
+			productReference = DA0000000000000000000F02 /* DigiWalker Phone Widgets.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -436,6 +507,9 @@
 					DA0000000000000000000D01 = {
 						CreatedOnToolsVersion = 26.5;
 					};
+					DA0000000000000000000F01 = {
+						CreatedOnToolsVersion = 26.5;
+					};
 				};
 			};
 			buildConfigurationList = 185DDB0330B322A400FF148A /* Build configuration list for PBXProject "DigiWalker" */;
@@ -462,6 +536,7 @@
 				185DDB3930B322A600FF148A /* DigiWalker Watch AppTests */,
 				185DDB4330B322A600FF148A /* DigiWalker Watch AppUITests */,
 				DA0000000000000000000D01 /* DigiWalker Widgets */,
+				DA0000000000000000000F01 /* DigiWalker Phone Widgets */,
 			);
 		};
 /* End PBXProject section */
@@ -520,6 +595,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DA0000000000000000000F08 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA0000000000000000000F10 /* PrivateAssets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -572,6 +655,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DA0000000000000000000F06 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -604,6 +694,11 @@
 			isa = PBXTargetDependency;
 			target = DA0000000000000000000D01 /* DigiWalker Widgets */;
 			targetProxy = DA0000000000000000000D0A /* PBXContainerItemProxy */;
+		};
+		DA0000000000000000000F09 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DA0000000000000000000F01 /* DigiWalker Phone Widgets */;
+			targetProxy = DA0000000000000000000F0A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -800,6 +895,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = DigiWalker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JPUL4486T6;
@@ -835,6 +931,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = DigiWalker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JPUL4486T6;
@@ -1111,6 +1208,67 @@
 			};
 			name = Release;
 		};
+		DA0000000000000000000F0C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "DigiWalker Phone Widgets.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DigiWalker Phone Widgets-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "DigiWalker Widgets";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalker.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DA0000000000000000000F0D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "DigiWalker Phone Widgets.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JPUL4486T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DigiWalker Phone Widgets-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "DigiWalker Widgets";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ty.park.DigiWalker.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1186,6 +1344,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		DA0000000000000000000F0B /* Build configuration list for PBXNativeTarget "DigiWalker Phone Widgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA0000000000000000000F0C /* Debug */,
+				DA0000000000000000000F0D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -1205,6 +1372,10 @@
 			productName = DigiWalkerCore;
 		};
 		DA0000000000000000000E01 /* DigiWalkerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DigiWalkerCore;
+		};
+		DA0000000000000000000F0E /* DigiWalkerCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DigiWalkerCore;
 		};

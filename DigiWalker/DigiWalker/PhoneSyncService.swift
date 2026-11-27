@@ -1,6 +1,7 @@
 import Combine
 import DigiWalkerCore
 import Foundation
+import UIKit
 import WatchConnectivity
 
 struct PhoneCache: Codable {
@@ -16,6 +17,8 @@ final class PhoneSyncService: NSObject, ObservableObject, WCSessionDelegate {
     private let file = StateFile<PhoneCache>(url: URL.applicationSupportDirectory.appending(path: "watch-cache.json"))
     private let pendingFile = StateFile<PendingNewEgg>(url: URL.applicationSupportDirectory.appending(path: "pending-new-egg.json"))
 
+    private let widget: PhoneWidgetPublishing
+
     /// Activated, paired and with the watch app installed: the only state in which a request may be saved and sent.
     @Published private(set) var watchLinked = false
 
@@ -27,7 +30,8 @@ final class PhoneSyncService: NSObject, ObservableObject, WCSessionDelegate {
         session.activationState == .activated && session.isPaired && session.isWatchAppInstalled
     }
 
-    override init() {
+    init(widget: PhoneWidgetPublishing = PhoneWidgetPublisher()) {
+        self.widget = widget
         super.init()
         do { cache = Self.validated(try file.load()) } catch { status = "저장된 워치 기록을 읽을 수 없어요." }
         pendingNewEgg = try? pendingFile.load()
@@ -67,9 +71,19 @@ final class PhoneSyncService: NSObject, ObservableObject, WCSessionDelegate {
             let updated = PhoneCache(snapshot: snapshot, receivedAt: .now)
             try file.save(updated)
             cache = updated
+            publishWidget()
             resolvePending()
         } catch { status = "워치 기록을 읽거나 저장하지 못했어요." }
     }
+
+    private func publishWidget() {
+        guard let cache else { return }
+        widget.publish(cache, foreground: UIApplication.shared.applicationState == .active)
+    }
+
+    /// Called when the app becomes active: fills in the widget copy of an already cached snapshot (e.g. after an
+    /// app update), and refreshes the receive time shown on it. Does nothing without a valid cache.
+    func refreshWidget() { publishWidget() }
 
     /// Drops a saved request once the cache shows another partner than the one it targeted.
     private func resolvePending() {
