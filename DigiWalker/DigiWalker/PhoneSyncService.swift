@@ -34,6 +34,10 @@ final class PhoneSyncService: NSObject, ObservableObject, WCSessionDelegate {
         self.widget = widget
         super.init()
         do { cache = Self.validated(try file.load()) } catch { status = "저장된 워치 기록을 읽을 수 없어요." }
+        #if DEMO_DEX
+        // Battle test build for an iPhone without a watch: in-memory demo partner with a full dex (see DemoDex).
+        if cache == nil { cache = DemoDex.cache() }
+        #endif
         pendingNewEgg = try? pendingFile.load()
         resolvePending()
         guard WCSession.isSupported() else {
