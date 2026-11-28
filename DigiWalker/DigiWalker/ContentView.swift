@@ -33,6 +33,8 @@ struct ContentView: View {
                         NavigationLink(items.synced ? "아이템 · 보유 종류 \(items.ownedKinds) / \(items.totalKinds)" : "아이템") {
                             ItemView(snapshot: snapshot)
                         }
+                        NavigationLink("배틀하기") { BattleView(snapshot: snapshot) }
+                            .accessibilityIdentifier("battleLink")
                     }
                     Section("워치 활동 기록") {
                         if let date = snapshot.observedAt {
