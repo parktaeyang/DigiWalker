@@ -225,7 +225,7 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 
 ## iPhone 위젯(홈 화면 small·잠금 화면 3종) · 2026-11-28
 
-계획서 `local-notes/plans/20261127-iphone-widget.md`의 1~6단계. 실기기 설치와 확인(7단계)은 하지 않았다.
+계획서 `local-notes/plans/20261127-iphone-widget.md`의 1~7단계. 7단계 실기기 확인은 아래 "실기기 확인 (2026-11-28)"에 적었다.
 
 ### 구조
 - **확장 타깃:** `DigiWalker Phone Widgets`(번들 ID `ty.park.DigiWalker.widgets`, iOS 18.0). 지원 크기는 systemSmall, accessoryCircular, accessoryRectangular, accessoryInline이고 kind는 `WidgetSnapshot.widgetKind`다. 위젯은 사본을 읽기만 하고 걸음을 계산하지 않는다.
@@ -233,7 +233,7 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - **코어:** `WidgetSnapshot(snapshot:receivedAt:)`로 iPhone 캐시에서 사본을 만든다(`updatedAt` = 수신 시각). 선택 필드 `offersNewEgg`가 false(스냅샷 v3 이하 캐시)이고 궁극체이면 새 알 카운트다운 대신 "최종 단계"(`Progress.finalStage`)를 보인다. 워치가 쓰는 사본에는 이 키가 없다.
 - **publisher:** `PhoneWidgetPublisher`가 캐시 저장에 성공한 뒤(`PhoneSyncService.receive`)와 앱이 활성화될 때(`scenePhase == .active`, `refreshWidget()`) iPhone의 App Group 컨테이너에 `widget-snapshot.json`을 원자적으로 쓴다. 쓰기 실패는 `NSLog`만 남기고 캐시·상태·새 알 요청에 영향이 없다. 캐시 저장이 실패하거나 스냅샷이 거부되면 사본을 건드리지 않는다. 단위 테스트 실행 중에는 `InertPhoneWidgetPublisher`를 쓴다.
 - **리로드 규칙:** 사본이 기존과 완전히 같으면(수신 시각 포함) 쓰지 않는다. 리로드 여부는 사본을 쓰지 않았더라도 마지막 리로드 기록(`phone-widget-reload.json`)과 비교해 판단한다. 포그라운드: 마지막 리로드 이후 바뀐 것이 있으면 항상 리로드. 백그라운드: `WidgetReloadPolicy`(종·단계·개체 변경은 즉시, 걸음만 바뀌면 30분 간격)에 더해, 수신 시각이 더 새로워졌고 30분이 지났으면 리로드. 기록 시각이 현재보다 미래(시계를 되돌림)이면 기록을 기준으로 보지 않고 한 번 리로드한 뒤 기준을 새로 잡는다. 기록 저장에 실패하면 중복 리로드 쪽으로 기운다(의도). 이 규칙은 iPhone publisher 안에만 있고 워치 `WidgetReloadPolicy`는 바뀌지 않았다.
-- **개인정보:** 걸음에서 나온 문구(rectangular·small의 진행 문구, inline은 이름을 포함한 문구 전체)에 `.privacySensitive()`를 지정했다(시스템이 가림을 요청할 때 가려진다. 실제로 언제 가려지는지는 미검증). 도트는 가리지 않고, rectangular·small의 이름도 가리지 않는다. circular의 접근성 라벨은 이름만 쓴다. 유지 여부는 실기기에서 보고 정한다(사용자 결정 2026-11-28).
+- **개인정보:** 걸음에서 나온 문구(rectangular·small의 진행 문구, inline은 이름을 포함한 문구 전체)에 `.privacySensitive()`를 지정했다(시스템이 가림을 요청할 때 가려진다). 도트는 가리지 않고, rectangular·small의 이름도 가리지 않는다. circular의 접근성 라벨은 이름만 쓴다. 실기기 확인 뒤 현행 유지(2026-11-28).
 
 ### 갱신 한계
 - 위젯은 **iPhone 앱이 워치 스냅샷을 받았을 때만** 바뀐다. 워치는 `updateApplicationContext`로 보내고, 꺼진 iPhone 앱이 이것으로 백그라운드 실행되지는 않는다고 알고 있다(실기기 미확인). 그래서 실제로는 앱을 열었을 때나 앱이 메모리에 있을 때 갱신되고 워치의 최신 걸음보다 늦을 수 있다. 위젯 설명에도 이 한계를 적었다. 동기화 방식 변경은 이번 범위 밖이다.
@@ -244,7 +244,7 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - 새 App ID `ty.park.DigiWalker.widgets`가 필요하다(무료 팀은 7일에 10개 한도). iPhone 앱 프로파일도 새로 만들어졌다.
 - **프로파일 만료(서명 빌드 기준, 설치 전):** iPhone 앱 2026-12-04 23:48 KST, iPhone 위젯 확장 2026-12-04 23:48 KST(앱 14:48:34Z, 확장 14:48:30Z). 두 프로파일 모두 application-groups `group.ty.park.DigiWalker`와 ProvisionedDevices 4대가 있다. 설치 전이므로 설치 후 기기에 실제 적용된 만료일은 다시 기록해야 한다. 워치 쪽 만료(2026-12-03 20:06 KST)는 그대로다. 이 iPhone 빌드를 설치하기 전까지 기기의 iPhone 앱 만료는 2026-12-02 09:35 KST(이전 기록)다.
 
-### 위젯 넣는 방법(예정, 실기기 미확인)
+### 위젯 넣는 방법
 - 홈 화면을 길게 눌러 + → DigiWalker → small. 잠금 화면은 길게 눌러 사용자화 → 위젯 칸에서 DigiWalker(원형·직사각형·한 줄).
 
 ### 검증한 환경
@@ -253,10 +253,71 @@ Xcode가 USB로 페어링된 iPhone 16 Pro Max를 확인했다. iOS 기기용 De
 - 워치 시뮬레이터(Series 11 46mm) `DigiWalker Watch AppTests` 통과(회귀).
 - `generic/platform=iOS -allowProvisioningUpdates` 서명 빌드 성공. 앱과 확장 양쪽의 엔타이틀먼트에 App Group이 있고 확장 번들에 `PrivateAssets`가 들어 있다. 설치하지 않았다.
 
-### 미검증
-- 실기기와 시뮬레이터 화면 확인 전부(스크린샷 없음): 도트 크기와 슬롯(72×64, 44×44, padding 6), 각 상태 문구, 다크·틴트 홈 화면.
-- **잠금 화면 vibrant(단색) 렌더링:** 도트가 실루엣으로 보일 수 있다.
+### 실기기 확인 (2026-11-28)
+- 본인 iPhone 16 Pro Max(`618c5f0` 설치, 프로파일 만료 2026-12-04 23:48 KST)와 본인 Apple Watch Ultra 2(`07f6c48`)에서 사용자가 확인했다: 홈 화면 small과 잠금 화면 3종 추가, 도트 크기·잘림 없음, 이름·진행 문구, "M/d HH:mm 수신", 워치에서 걸은 뒤 iPhone 앱을 열면 위젯 갱신, 잠금 화면 표시. 사용자 평가: "잘됩니다. 확인사항 모두 만족합니다."
+- 잠금 화면 `privacySensitive` 가림: 실기기 확인 뒤 현행 유지(사용자가 확인 사항 모두 만족).
+- 아직 측정하지 않은 것: 앱을 열지 않았을 때의 갱신 지연, 친구 기기.
+
+### 미검증 (실기기 확인 뒤 남은 것)
+- 사용자가 확인한 것(위 절): 정상 상태의 도트 크기·잘림, 이름·진행 문구, 수신 시각, 앱을 열 때 갱신, 잠금 화면 표시와 가림 동작 수용.
+- 확인하지 않은 상태와 모드: 사본 없음·v3 캐시 "최종 단계" 문구, 다크·틴트·클리어 홈 화면.
 - **포그라운드 리로드 예산:** "포그라운드 앱의 리로드 요청은 예산에 들어가지 않는다"는 Apple 문서 기반이며 원문을 다시 확인하지 않았다.
 - **백그라운드 전달 지연:** 앱을 열지 않았을 때 위젯이 얼마나 늦는지.
 - 잠금 상태(재부팅 후 첫 잠금 해제 전)에서 App Group 파일 읽기, 위젯 확장 메모리 한도.
-- `.privacySensitive()`가 잠금 화면에서 실제로 가려지는지.
+- 친구 기기.
+
+## QR 친선 배틀(iPhone) · 2026-11-28
+친구와 QR로 하는 친선전이다. 보상·전적·횟수 제한이 없고 디지몬·걸음·도감·아이템·캐시를 바꾸지 않는다. 요구사항은 `local-notes/기능/배틀.md`, 계획은 `local-notes/plans/20261128-friendly-battle.md`다. 워치 코드와 스냅샷 v4는 바꾸지 않았다.
+
+### 구조
+- **코어 `Packages/DigiWalkerCore/Sources/DigiWalkerCore/Battle/`**(플랫폼 독립, 난수 주입 가능)
+  - `BattleCard.swift`: `SpeciesCatalog.battleStage(of:)`, QR 페이로드 `BattleCard`(인코드·디코드·검증).
+  - `BattleRules.swift`: `BattleMove`, `BattleRules.judge`, 난수 함수, `BattleSession`.
+  - `BattleRoster.swift`: 도감과 현재 파트너에서 배틀 가능한 디지몬 목록(`BattleRoster`), 단계 맞추기(`BattleMatch`).
+- **앱 `DigiWalker/DigiWalker/`**: `BattleFlow.swift`(상태 모델: 스캔 처리, 매칭, 세 판 수집, 다시 하기, 캐시 갱신), `BattleView.swift`(배틀하기 화면, 내 QR, 도감에서 바꾸기, 같은 단계 고르기), `BattleArenaView.swift`(마주 보는 도트, 고르기, 결과), `BattleQRImage.swift`(CoreImage, payload별 캐시), `BattleScannerView.swift`(VisionKit `DataScannerViewController`, 권한·지원 판단 `BattleCameraAccess`).
+- **진입점:** `ContentView.swift`의 "아이템 · 보유 종류" 바로 아래 "배틀하기"(식별자 `battleLink`).
+- **카메라 권한:** iPhone 앱 Debug·Release에 `INFOPLIST_KEY_NSCameraUsageDescription = "친구의 배틀 QR 코드를 읽을 때 카메라를 사용합니다."`. 워치 타깃에는 없다.
+- **엔타이틀먼트·프로파일 변경 없음:** 서명 빌드의 앱 엔타이틀먼트는 App Group `group.ty.park.DigiWalker`와 `get-task-allow`뿐이고 새 App ID도 필요 없었다. 프로파일 만료는 위젯 절의 기록과 같다(iPhone 앱 2026-12-04 23:48 KST).
+- **DEBUG 전용:** QR 문자열 입력칸 + "붙여넣기로 입력", 내 QR 문자열 표시 + "복사". Release 시뮬레이터 빌드의 실행 파일에 이 문구가 없음을 확인했다(Debug에는 있음).
+
+### QR 형식과 검증
+- 형식(ASCII만): `digiwalker-battle:1?s=<종 ID>&t=<단계>&n=<퍼센트 인코딩 이름>`. 형식 버전·종·이름·단계만 담고 걸음·거리·개체 ID는 없다.
+- 검증 순서: 길이 512바이트 이하(`tooLong`) → 접두사(`notBattleCode`) → **버전**(`unsupportedVersion`) → 구조(`?` 뒤 키가 s·t·n뿐이고 중복·누락 없음, `malformed`) → 종 ID 형식·카탈로그(`unknownSpecies`) → 디지타마(`egg`) → 카드 단계 없는 종(포요몬, `notEligible`) → 단계가 한 자리 숫자이고 카탈로그와 같음(`stageMismatch`) → 이름(`malformed`).
+- **버전을 구조보다 먼저 읽는다.** 계획서 순서와 다르다. 앞으로 형식이 바뀌어 키·구분자가 달라져도 "구조가 깨짐"이 아니라 "앱을 최신으로"로 안내하기 위해서다. 버전은 `digiwalker-battle:` 뒤의 앞쪽 숫자만 읽으므로 `2/...`·`2:...`·`2`(물음표 없음)도 `unsupportedVersion`이다. 버전 1인데 `?`가 없으면 `malformed`.
+- 이름: 인코더가 쓰는 문자(알파벳·숫자·`-._~`)와 올바른 `%HH`만 받는다. 원문에 비ASCII·공백·`#`·깨진 이스케이프가 있으면 거부한다. 디코딩한 이름은 앞뒤 공백을 다듬고, 비었거나 32자 초과, 제어·서식(Cf)·줄/문단 구분(Zl, Zp) 문자가 있으면 거부한다. 이름이 카탈로그 이름과 달라도 받아들이고 화면에는 내 기기 이름을 쓴다.
+- `BattleCard.init?`은 인코딩 결과가 512바이트를 넘는 이름이면 nil이다(만들 수 있는 카드는 항상 디코딩된다).
+
+### 판정과 진행
+- 공격 대 공격: 수치가 큰 쪽 승. 방어 대 방어: 수치와 상관없이 무승부. 공격 대 방어: 공격 수치가 크면 "크리티컬"로 공격 승, 방어 수치가 크면 "반격"으로 방어 승. 수치가 같으면 QR을 찍은 쪽(이 기기의 사용자) 승이고, 문구는 이긴 내 행동을 따른다(공격이면 크리티컬, 방어면 반격, 공격끼리는 문구 없음).
+- 상대 패턴(공/방 + 0~100 세 개)은 이 기기가 배틀을 시작할 때 난수로 만든다. 같은 QR로 다시 하면 새 배틀이다. 내 수치는 공격·방어를 고르는 순간 0~100으로 뽑는다.
+- **세 판 수집:** 처음 세 판의 선택을 모두 받은 뒤에 차례로 판정한다(결정 7). 그 전에는 결과가 나오지 않는다. 2:0이 되어도 셋째 선택은 받는다. 승부가 이미 난 뒤의 판은 판정에 넣지 않고, 결과 요약에 "3판 — (승부 결정 후)"와 내가 고른 행동·수치만 보인다.
+- 세 판이 끝나도 승부가 나지 않으면(예: 1:1) "아직 승부가 나지 않았어요 — 한 판 더!"와 현재 전적을 보이고 한 판씩 추가로 고른다. 상대 패턴은 처음부터 다시 쓴다. 판 수 제한은 없고, 방어끼리 비기면 공격을 권하는 힌트를 보인다.
+- 결과 화면: 승패, 판별 요약(예: "1판 크리티컬! 승", "3판 반격… 패"), 작은 글씨로 두 쪽 수치. 버튼은 "다시 하기"(같은 상대·같은 내 디지몬, 새 패턴)와 "끝내기". 막힌 상태(알)이거나 고른 디지몬이 로스터에서 사라졌으면 "다시 하기"는 새 배틀 대신 로비로 돌아간다.
+- **단계 맞추기:** 같은 단계면 바로 배틀, 내가 낮으면 도감의 같은 단계 디지몬을 고르고(없으면 "같은 단계의 디지몬이 없어요"), 내가 높으면 "상대가 같은 단계의 디지몬으로 QR을 다시 만들어야 해요". 고른 디지몬은 이번 배틀에만 쓴다.
+- **로스터 선택:** 사용자가 직접 고르기 전에는 "내 디지몬"이 현재 파트너를 따라간다(진화하면 QR도 바뀐다). 직접 고르면 도감에 있는 한 유지한다. 화면을 연 채로 새 캐시가 오면 로스터를 다시 계산하고, 이미 시작한 배틀은 그대로 둔다.
+
+### 계획 검토 결정
+- Q1 상대 패턴은 스캔하는 기기가 만든다. Q2 추가 판은 한 판씩. Q3 결과 화면에 수치를 작게 보임(고르는 동안은 숨김). Q4 판 수 상한 없음 + 힌트. Q5 동점 문구는 이긴 내 행동을 따름. Q6 포요몬은 배틀에서 뺌. Q8 이름 불일치는 허용하고 내 기기 이름을 씀.
+- **Q7(사용자 변경):** 지금 키우는 디지몬이 디지타마이면 배틀 화면 전체를 "부화한 뒤에 배틀할 수 있어요"로 막는다(내 QR·상대 QR 찍기 모두). 코어에서는 `BattleRoster.isBlockedByEgg`와 `BattleMatch.eggBlocked`다.
+
+### 검증한 환경 (시뮬레이터·macOS, 2026-11-28)
+- 코어 `swift test` 289개 통과(새 `BattleCardTests`·`BattleRulesTests`·`BattleRosterTests` 포함).
+- iPhone 17 시뮬레이터 `DigiWalkerTests` 통과(Battle 관련 새 테스트 `BattleFlowTests`·`BattleQRImageTests` 포함, 전체 통과 케이스 74개). QR 이미지를 만든 뒤 `CIDetector`로 읽어 payload와 같은지 확인했다(가장 긴 페이로드 포함, 시뮬레이터에서 동작).
+- 워치 시뮬레이터 빌드 성공(회귀). `generic/platform=iOS -allowProvisioningUpdates` 서명 빌드 성공(설치하지 않음). 빌드된 `Info.plist`에 `NSCameraUsageDescription`이 있다.
+- Release 시뮬레이터 빌드 성공, 실행 파일에 DEBUG 입력 문구가 없음.
+- 화면 단위 렌더링 스크린샷(앱 호스트 안에서 UIWindow를 그려 저장, 실행 중인 앱 전체 흐름이 아님)으로 배틀 화면·결과·2:0 뒤 셋째 판 표시·추가 판을 확인했다. DIM 도트는 원래 왼쪽을 보므로 왼쪽의 내 도트만 좌우 반전해 서로 마주 본다(PrivateAssets가 있는 이 기기 기준).
+
+### 알려진 제약 (사용자 결정 2026-11-28: 현행 커밋)
+- **고르기 창이 열린 동안 진화:** 상대 QR을 찍고 도감 고르기 창이 열려 있는 사이 내 디지몬이 상대보다 높은 단계로 진화해도 창이 그대로 남아, 원래라면 "상대가 QR을 다시 만들어야 해요"로 막혀야 할 배틀을 시작할 수 있다.
+- **스캐너가 열린 동안 새 알:** 카메라 시트는 닫히지 않는다. 다만 찍어도 `handleScanned`가 막아 배틀은 시작되지 않는다.
+- **카메라 제한(`.restricted`):** 스크린 타임 등으로 제한된 경우에도 "설정 열기"를 안내한다(앱 권한 스위치로는 풀 수 없음).
+- **PrivateAssets가 없는 빌드:** 내 쪽 도트를 좌우 반전하므로 물음표 대체 아이콘도 뒤집혀 보인다.
+- 모두 보상 없는 친선전이라 육성 데이터에는 영향이 없다. 실기기에서 보고 필요하면 고친다.
+
+### 미검증
+- **실기기 카메라 스캔**과 VisionKit `payloadStringValue`가 ASCII QR을 그대로 돌려주는지.
+- **두 기기 간 QR 교환**(서로 찍기, 친구 기기). 친구 기기 설치 때 한 번에 확인한다.
+- **실행 중인 앱에서의 전체 흐름:** 스캔 시트가 닫힌 뒤 고르기 시트·아레나 push가 이어지는 동작, push된 상태에서 새 캐시가 올 때의 `onChange`. 이 흐름은 상태 모델(`BattleFlowTests`)로만 검증했다.
+- **저장소 PNG 폴백 도트의 방향**(PrivateAssets가 없는 기기).
+- **스캐너 실패·복구:** 시작 실패, 실행 중 카메라 불가, 설정에서 돌아온 뒤 재확인, "다시 시도". 시뮬레이터에는 카메라가 없다.
+- iOS 18 런타임(설치된 시뮬레이터는 27.x).
